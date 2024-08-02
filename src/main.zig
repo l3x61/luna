@@ -1,9 +1,19 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+
 const Ansi = @import("ansi.zig");
 const Token = @import("token.zig").Token;
 const Lexer = @import("lexer.zig").Lexer;
+const Node = @import("node.zig").Node;
+const Parser = @import("parser.zig").Parser;
 
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer if (gpa.deinit() == .leak) {
+        std.debug.print("MEMORY LEAK", .{});
+    };
+    var allocator = gpa.allocator();
+
     const stdin = std.io.getStdIn().reader();
     const stdout = std.io.getStdOut().writer();
 
@@ -19,15 +29,24 @@ pub fn main() !void {
         }
 
         // try stdout.print("{s}\n", .{line});
-        var lexer = Lexer.init(line);
-        scan: while (true) {
-            var token = lexer.next() catch {
-                break :scan;
-            };
-            token.showInSource(line, Ansi.Cyan);
-            if (token.matchTag(Token.Tag.EndOfFile)) {
-                break :scan;
-            }
-        }
+        //var lexer = Lexer.init(line);
+        //scan: while (true) {
+        //    var token = lexer.next() catch {
+        //        break :scan;
+        //    };
+        //    token.showInSource(line, Ansi.Cyan);
+        //    if (token.matchTag(Token.Tag.EndOfFile)) {
+        //        break :scan;
+        //    }
+        //}
+
+        var parser = Parser.init(&allocator, line) catch {
+            continue :repl;
+        };
+        var node = parser.parse() catch {
+            continue :repl;
+        };
+        defer node.free(&allocator);
+        node.debug(line, 0);
     }
 }
