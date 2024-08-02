@@ -1,4 +1,7 @@
 const std = @import("std");
+const Ansi = @import("ansi.zig");
+const Token = @import("token.zig").Token;
+const Lexer = @import("lexer.zig").Lexer;
 
 pub fn main() !void {
     const stdin = std.io.getStdIn().reader();
@@ -15,6 +18,16 @@ pub fn main() !void {
             break :repl;
         }
 
-        try stdout.print("{s}\n", .{line});
+        // try stdout.print("{s}\n", .{line});
+        var lexer = Lexer.init(line);
+        scan: while (true) {
+            var token = lexer.next() catch {
+                break :scan;
+            };
+            token.showInSource(line, Ansi.Cyan);
+            if (token.matchTag(Token.Tag.EndOfFile)) {
+                break :scan;
+            }
+        }
     }
 }
