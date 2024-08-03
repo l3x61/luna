@@ -1,10 +1,11 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const Token = @import("token.zig").Token;
 
 const ProgramNode = struct {
-    statements: std.ArrayList(*Node),
+    statements: ArrayList(*Node),
 };
 
 const BinaryNode = struct {
@@ -47,7 +48,7 @@ pub const Node = struct {
     pub fn initProgramNode(allocator: Allocator) !*Node {
         var node = try allocator.create(Node);
         node.tag = Node.Tag.Program;
-        node.as = Union{ .program = ProgramNode{ .statements = std.ArrayList(*Node).init(allocator) } };
+        node.as = Union{ .program = ProgramNode{ .statements = ArrayList(*Node).init(allocator) } };
         return node;
     }
 
@@ -96,31 +97,47 @@ pub const Node = struct {
         }
     }
 
-    pub fn debug(self: *Node, source: []const u8) void {
-        self.debugInternal(source, 0);
+    pub fn debug(self: *Node, allocator: Allocator, source: []const u8) !void {
+        var buffer = ArrayList(u8).init(allocator);
+        defer buffer.deinit();
+        try self.debugInternal(&buffer, source, true);
     }
 
-    fn debugInternal(self: *Node, source: []const u8, indent: u32) void {
-        const width = 4;
+    fn debugInternal(self: *Node, prefix: *ArrayList(u8), source: []const u8, isLast: bool) !void {
+        std.debug.print("{s}", .{prefix.items});
+        var newPrefix = try prefix.clone();
+        defer newPrefix.deinit();
+        if (!isLast) {
+            std.debug.print("├── ", .{});
+            try newPrefix.appendSlice("│   ");
+        } else {
+            if (self.tag != Node.Tag.Program) {
+                std.debug.print("└── ", .{});
+                try newPrefix.appendSlice("    ");
+            }
+        }
+
+        // Print the node type and recurse into children
         switch (self.tag) {
             .Program => {
-                std.debug.print("{[empty]s: >[indent]}Program\n", .{ .empty = "", .indent = indent });
-                for (self.as.program.statements.items) |statement| {
-                    statement.debugInternal(source, indent + width);
+                std.debug.print("Program\n", .{});
+                for (self.as.program.statements.items, 0..) |statement, index| {
+                    const isLastStatement = index == self.as.program.statements.items.len - 1;
+                    try statement.debugInternal(&newPrefix, source, isLastStatement);
                 }
             },
             .Binary => {
-                std.debug.print("{[empty]s: >[indent]}BinaryExpression {[operator]s}\n", .{ .empty = "", .indent = indent, .operator = self.as.binary.operator.lexeme(source) });
-                self.as.binary.left.debugInternal(source, indent + width);
-                self.as.binary.right.debugInternal(source, indent + width);
+                std.debug.print("BinaryExpression {[operator]s}\n", .{ .operator = self.as.binary.operator.lexeme(source) });
+                try self.as.binary.left.debugInternal(&newPrefix, source, false);
+                try self.as.binary.right.debugInternal(&newPrefix, source, true);
             },
             .Unary => {
-                std.debug.print("{[empty]s: >[indent]}UnaryExpression {[operator]s}\n", .{ .empty = "", .indent = indent, .operator = self.as.unary.operator.lexeme(source) });
-                self.as.unary.operand.debugInternal(source, indent + width);
+                std.debug.print("UnaryExpression {[operator]s}\n", .{ .operator = self.as.unary.operator.lexeme(source) });
+                try self.as.unary.operand.debugInternal(&newPrefix, source, true);
             },
             .Primary => {
                 const operand = self.as.primary.operand;
-                std.debug.print("{[empty]s: >[indent]}{[kind]s} {[operand]s}\n", .{ .empty = "", .kind = operand.tag.toString(), .indent = indent, .operand = operand.lexeme(source) });
+                std.debug.print("PrimaryExpression {[operand]s}\n", .{ .operand = operand.lexeme(source) });
             },
         }
     }

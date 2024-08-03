@@ -45,6 +45,6 @@ pub fn main() !void {
             continue :repl;
         };
         defer node.free(allocator);
-        node.debug(line);
+        try node.debug(allocator, line);
     }
 }
