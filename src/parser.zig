@@ -12,12 +12,12 @@ pub const Parser = struct {
     token: Token,
 
     pub const Error = error{
-        UnexpectedToken,
+        SyntaxError,
     };
 
-    pub fn init(allocator: *Allocator, source: []const u8) !Parser {
+    pub fn init(allocator: *Allocator, source: []const u8) Parser {
         var lexer = Lexer.init(source);
-        const token = try lexer.next();
+        const token = lexer.next();
         return Parser{ .allocator = allocator, .lexer = lexer, .token = token };
     }
 
@@ -80,19 +80,19 @@ pub const Parser = struct {
         return try Node.initPrimaryNode(self.allocator, operand);
     }
 
-    fn eatTag(self: *Parser, expected: Token.Tag) !Token {
+    fn eatTag(self: *Parser, expected: Token.Tag) Parser.Error!Token {
         return self.eatTags(&[_]Token.Tag{expected});
     }
 
-    fn eatTags(self: *Parser, expected: []const Token.Tag) !Token {
+    fn eatTags(self: *Parser, expected: []const Token.Tag) Parser.Error!Token {
         const token = self.token;
-        self.token = try self.lexer.next();
+        self.token = self.lexer.next();
         if (token.matchTags(expected)) {
             return token;
         } else {
             std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: {s}\n", .{token.tag.toString()});
             token.showInSource(self.lexer.source, Ansi.Red);
-            return Error.UnexpectedToken;
+            return Error.SyntaxError;
         }
     }
 

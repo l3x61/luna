@@ -18,7 +18,9 @@ pub const Token = struct {
         Equal,
         LeftParenthesis,
         RightParenthesis,
-        Error,
+        ErrorStringNewline,
+        ErrorStringOpen,
+        ErrorCharacter,
         EndOfFile,
 
         pub fn toString(kind: Tag) []const u8 {

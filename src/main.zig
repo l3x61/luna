@@ -40,9 +40,7 @@ pub fn main() !void {
         //    }
         //}
 
-        var parser = Parser.init(&allocator, line) catch {
-            continue :repl;
-        };
+        var parser = Parser.init(&allocator, line);
         var node = parser.parse() catch {
             continue :repl;
         };

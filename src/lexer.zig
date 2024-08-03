@@ -6,13 +6,6 @@ pub const Lexer = struct {
     source: []const u8,
     cursor: usize,
 
-    // NOTE: maybe instead of throwing an error, return an error token and let the parser handle it
-    pub const Error = error{
-        NewlineInString,
-        UnterminatedString,
-        InvalidCharacter,
-    };
-
     pub fn init(source: []const u8) Lexer {
         return Lexer{ .source = source, .cursor = 0 };
     }
@@ -50,7 +43,7 @@ pub const Lexer = struct {
         return c >= 'a' and c <= 'z' or c >= 'A' and c <= 'Z' or c == '_';
     }
 
-    pub fn next(self: *Lexer) Lexer.Error!Token {
+    pub fn next(self: *Lexer) Token {
         if (self.isEndOfFile()) {
             return Token.init(.EndOfFile, self.source.len, 0);
         }
@@ -134,53 +127,16 @@ pub const Lexer = struct {
                     // TODO: escape sequence
                 }
                 if (self.char() == '\n') {
-                    const token = Token.init(.String, start, self.cursor - start);
-                    std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " newline in string\n", .{});
-                    token.showInSource(self.source, Ansi.Red);
-                    return Error.NewlineInString;
+                    return Token.init(.ErrorStringNewline, start, self.cursor - start);
                 }
                 self.advance();
             }
             if (self.isEndOfFile()) {
-                const token = Token.init(.String, start, self.cursor - start);
-                std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unterminated string\n", .{});
-                token.showInSource(self.source, Ansi.Red);
-                return Error.UnterminatedString;
+                return Token.init(.ErrorStringOpen, start, self.cursor - start);
             }
             self.advance();
             return Token.init(.String, start, self.cursor - start);
         }
-
-        const token = Token.init(.Identifier, self.cursor, 1);
-        std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " invalid character\n", .{});
-        token.showInSource(self.source, Ansi.Red);
-        return Error.InvalidCharacter;
+        return Token.init(.ErrorCharacter, self.cursor, 1);
     }
 };
-
-test "newline in string" {
-    const source = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'hello\nworld!'";
-    var lexer = Lexer.init(source);
-    _ = lexer.next() catch |err| switch (err) {
-        Lexer.Error.NewlineInString => {},
-        else => unreachable,
-    };
-}
-
-test "unterminated string" {
-    const source = "\n\n\n\n\n\n'hello world!";
-    var lexer = Lexer.init(source);
-    _ = lexer.next() catch |err| switch (err) {
-        Lexer.Error.UnterminatedString => {},
-        else => unreachable,
-    };
-}
-
-test "invalid character" {
-    const source = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n`";
-    var lexer = Lexer.init(source);
-    _ = lexer.next() catch |err| switch (err) {
-        Lexer.Error.InvalidCharacter => {},
-        else => unreachable,
-    };
-}
