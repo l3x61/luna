@@ -74,6 +74,10 @@ pub const Lexer = struct {
 
         if (c == '*') {
             self.advance();
+            if (self.char() == '*') {
+                self.advance();
+                return Token.init(.StarStar, self.cursor - 2, 2);
+            }
             return Token.init(.Star, self.cursor - 1, 1);
         }
 

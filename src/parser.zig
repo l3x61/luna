@@ -53,13 +53,26 @@ pub const Parser = struct {
     }
 
     fn parseMultiplicativeExpression(self: *Parser) !*Node {
-        var node = try self.parseUnaryExpression();
+        var node = try self.parsePowerExpression();
         errdefer node.free(self.allocator);
         while (self.token.matchTags(MultiplicativeTokenTags)) {
             const operator = try self.eatTags(MultiplicativeTokenTags);
-            const right = try self.parseUnaryExpression();
+            const right = try self.parsePowerExpression();
             errdefer right.free(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
+        }
+        return node;
+    }
+
+    fn parsePowerExpression(self: *Parser) !*Node {
+        var node = try self.parseUnaryExpression();
+        errdefer node.free(self.allocator);
+        if (self.token.matchTag(.StarStar)) {
+            const left = node;
+            const operator = try self.eatTag(.StarStar);
+            const right = try self.parsePowerExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, left, operator, right);
         }
         return node;
     }
@@ -78,6 +91,10 @@ pub const Parser = struct {
     fn parsePrimaryExpression(self: *Parser) !*Node {
         const operand = try self.eatTags(PrimaryTokenTags);
         return try Node.initPrimaryNode(self.allocator, operand);
+    }
+
+    fn eatTag(self: *Parser, expected: Token.Tag) Parser.Error!Token {
+        return self.eatTags(&[_]Token.Tag{expected});
     }
 
     fn eatTags(self: *Parser, expected: []const Token.Tag) Parser.Error!Token {

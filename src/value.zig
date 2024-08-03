@@ -65,6 +65,10 @@ pub const Value = struct {
         return Value.initNumber(left.toNumber() * right.toNumber());
     }
 
+    pub fn power(left: Value, right: Value) Value {
+        return Value.initNumber(std.math.pow(f64, left.toNumber(), right.toNumber()));
+    }
+
     pub fn divide(left: Value, right: Value) !Value {
         if (right.toNumber() == 0.0) {
             return Error.DivisionBy0;

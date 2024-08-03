@@ -23,6 +23,7 @@ pub const Luna = struct {
                     .Plus => return Value.add(left, right),
                     .Minus => return Value.subtract(left, right),
                     .Star => return Value.multiply(left, right),
+                    .StarStar => return Value.power(left, right),
                     .Slash => return try Value.divide(left, right),
                     .Percent => return try Value.modulo(left, right),
                     else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag.toString()}),

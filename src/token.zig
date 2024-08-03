@@ -13,6 +13,7 @@ pub const Token = struct {
         Plus,
         Minus,
         Star,
+        StarStar,
         Slash,
         Percent,
         Equal,

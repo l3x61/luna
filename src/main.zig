@@ -10,9 +10,6 @@ const Value = @import("value.zig").Value;
 const Luna = @import("luna.zig").Luna;
 
 pub fn main() !void {
-    var val = Value.init();
-    val.debug();
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() == .leak) {
         std.debug.print("MEMORY LEAK", .{});
