@@ -7,7 +7,7 @@ const Lexer = @import("lexer.zig").Lexer;
 const Node = @import("node.zig").Node;
 
 pub const Parser = struct {
-    allocator: *std.mem.Allocator,
+    allocator: Allocator,
     lexer: Lexer,
     token: Token,
 
@@ -15,7 +15,7 @@ pub const Parser = struct {
         SyntaxError,
     };
 
-    pub fn init(allocator: *Allocator, source: []const u8) Parser {
+    pub fn init(allocator: Allocator, source: []const u8) Parser {
         var lexer = Lexer.init(source);
         const token = lexer.next();
         return Parser{ .allocator = allocator, .lexer = lexer, .token = token };
@@ -78,10 +78,6 @@ pub const Parser = struct {
     fn parsePrimaryExpression(self: *Parser) !*Node {
         const operand = try self.eatTags(PrimaryTokenTags);
         return try Node.initPrimaryNode(self.allocator, operand);
-    }
-
-    fn eatTag(self: *Parser, expected: Token.Tag) Parser.Error!Token {
-        return self.eatTags(&[_]Token.Tag{expected});
     }
 
     fn eatTags(self: *Parser, expected: []const Token.Tag) Parser.Error!Token {

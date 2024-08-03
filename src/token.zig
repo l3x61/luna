@@ -65,7 +65,6 @@ pub const Token = struct {
         while (lineEnd < source.len and source[lineEnd] != '\n') {
             lineEnd += 1;
         }
-
         const before = source[lineStart..self.start];
         const token = source[self.start .. self.start + self.length];
         const after = source[self.start + self.length .. lineEnd];

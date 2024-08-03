@@ -12,7 +12,7 @@ pub fn main() !void {
     defer if (gpa.deinit() == .leak) {
         std.debug.print("MEMORY LEAK", .{});
     };
-    var allocator = gpa.allocator();
+    const allocator = gpa.allocator();
 
     const stdin = std.io.getStdIn().reader();
     const stdout = std.io.getStdOut().writer();
@@ -40,11 +40,11 @@ pub fn main() !void {
         //    }
         //}
 
-        var parser = Parser.init(&allocator, line);
+        var parser = Parser.init(allocator, line);
         var node = parser.parse() catch {
             continue :repl;
         };
-        defer node.free(&allocator);
-        node.debug(line, 0);
+        defer node.free(allocator);
+        node.debug(line);
     }
 }
