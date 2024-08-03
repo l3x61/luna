@@ -6,8 +6,13 @@ const Token = @import("token.zig").Token;
 const Lexer = @import("lexer.zig").Lexer;
 const Node = @import("node.zig").Node;
 const Parser = @import("parser.zig").Parser;
+const Value = @import("value.zig").Value;
+const Luna = @import("luna.zig").Luna;
 
 pub fn main() !void {
+    var val = Value.init();
+    val.debug();
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() == .leak) {
         std.debug.print("MEMORY LEAK", .{});
@@ -41,10 +46,16 @@ pub fn main() !void {
         //}
 
         var parser = Parser.init(allocator, line);
-        var node = parser.parse() catch {
+        var ast = parser.parse() catch {
             continue :repl;
         };
-        defer node.free(allocator);
-        try node.debug(allocator, line);
+        defer ast.free(allocator);
+        try ast.debug(allocator, line);
+
+        var result = try Luna.evaluate(ast, line);
+
+        std.debug.print(Ansi.Green ++ Ansi.Bold, .{});
+        result.debug();
+        std.debug.print(Ansi.Reset ++ "\n", .{});
     }
 }

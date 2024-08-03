@@ -2,6 +2,7 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
+const Ansi = @import("ansi.zig");
 const Token = @import("token.zig").Token;
 
 const ProgramNode = struct {
@@ -104,18 +105,19 @@ pub const Node = struct {
     }
 
     fn debugInternal(self: *Node, prefix: *ArrayList(u8), source: []const u8, isLast: bool) !void {
-        std.debug.print("{s}", .{prefix.items});
-        var newPrefix = try prefix.clone();
-        defer newPrefix.deinit();
+        std.debug.print(Ansi.Dim ++ "{s}", .{prefix.items});
+        var _prefix = try prefix.clone();
+        defer _prefix.deinit();
         if (!isLast) {
             std.debug.print("├── ", .{});
-            try newPrefix.appendSlice("│   ");
+            try _prefix.appendSlice("│   ");
         } else {
             if (self.tag != Node.Tag.Program) {
                 std.debug.print("└── ", .{});
-                try newPrefix.appendSlice("    ");
+                try _prefix.appendSlice("    ");
             }
         }
+        std.debug.print(Ansi.Reset, .{});
 
         // Print the node type and recurse into children
         switch (self.tag) {
@@ -123,17 +125,17 @@ pub const Node = struct {
                 std.debug.print("Program\n", .{});
                 for (self.as.program.statements.items, 0..) |statement, index| {
                     const isLastStatement = index == self.as.program.statements.items.len - 1;
-                    try statement.debugInternal(&newPrefix, source, isLastStatement);
+                    try statement.debugInternal(&_prefix, source, isLastStatement);
                 }
             },
             .Binary => {
                 std.debug.print("BinaryExpression {[operator]s}\n", .{ .operator = self.as.binary.operator.lexeme(source) });
-                try self.as.binary.left.debugInternal(&newPrefix, source, false);
-                try self.as.binary.right.debugInternal(&newPrefix, source, true);
+                try self.as.binary.left.debugInternal(&_prefix, source, false);
+                try self.as.binary.right.debugInternal(&_prefix, source, true);
             },
             .Unary => {
                 std.debug.print("UnaryExpression {[operator]s}\n", .{ .operator = self.as.unary.operator.lexeme(source) });
-                try self.as.unary.operand.debugInternal(&newPrefix, source, true);
+                try self.as.unary.operand.debugInternal(&_prefix, source, true);
             },
             .Primary => {
                 const operand = self.as.primary.operand;
