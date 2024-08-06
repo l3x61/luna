@@ -3,10 +3,11 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const Ansi = @import("ansi.zig");
+const Array = @import("array.zig").Array;
 const Token = @import("token.zig").Token;
 
 const ProgramNode = struct {
-    statements: ArrayList(*Node),
+    statements: Array(*Node),
 };
 
 const BinaryNode = struct {
@@ -49,7 +50,7 @@ pub const Node = struct {
     pub fn initProgramNode(allocator: Allocator) !*Node {
         var node = try allocator.create(Node);
         node.tag = Node.Tag.Program;
-        node.as = Union{ .program = ProgramNode{ .statements = ArrayList(*Node).init(allocator) } };
+        node.as = Union{ .program = ProgramNode{ .statements = Array(*Node).init(allocator) } };
         return node;
     }
 
@@ -99,7 +100,7 @@ pub const Node = struct {
     }
 
     pub fn debug(self: *Node, allocator: Allocator, source: []const u8) !void {
-        var buffer = ArrayList(u8).init(allocator);
+        var buffer = ArrayList(u8).init(allocator); // TODO: replace with string container
         defer buffer.deinit();
         try self.debugInternal(&buffer, source, true);
     }

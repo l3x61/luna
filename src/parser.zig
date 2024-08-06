@@ -25,7 +25,7 @@ pub const Parser = struct {
         const node = try Node.initProgramNode(self.allocator);
         errdefer node.free(self.allocator);
         while (self.token.tag != Token.Tag.EndOfFile) {
-            try node.as.program.statements.append(try self.parseStatement());
+            try node.as.program.statements.push(try self.parseStatement());
         }
         return node;
     }
