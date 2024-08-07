@@ -91,6 +91,29 @@ pub const Value = struct {
         }
     }
 
+    pub fn equal(left: Value, right: Value) bool {
+        if (left.tag != right.tag) {
+            return false;
+        }
+        switch (left.tag) {
+            .Null => return true,
+            .Boolean => return left.as.boolean == right.as.boolean,
+            .Number => return left.as.number == right.as.number,
+        }
+    }
+
+    pub fn equalStrict(left: Value, right: Value) bool {
+        if (left.tag != right.tag) {
+            return false;
+        }
+        switch (left.tag) {
+            .Null => return true,
+            .Boolean => return left.as.boolean == right.as.boolean,
+            .Number => return left.as.number == right.as.number,
+        }
+    }
+
+    // TODO: use custom formatter
     pub fn debug(self: Value) void {
         switch (self.tag) {
             .Null => std.debug.print("null", .{}),

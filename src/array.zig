@@ -52,6 +52,33 @@ pub fn Array(comptime Type: type) type {
             return null;
         }
 
+        pub fn find(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
+            for (self.items, 0..) |current, i| {
+                if (compare(current, item)) {
+                    return i;
+                }
+            }
+            return null;
+        }
+
+        pub fn first(self: *const Self) ?Type {
+            if (self.items.len != 0) {
+                return self.items[0];
+            }
+            return null;
+        }
+
+        pub fn last(self: *const Self) ?Type {
+            if (self.items.len != 0) {
+                return self.items[self.items.len - 1];
+            }
+            return null;
+        }
+
+        pub fn count(self: *const Self) usize {
+            return self.items.len;
+        }
+
         fn doubleCapacity(self: *Self) Error!void {
             const old_length = self.items.len;
             const new_capacity = switch (self.capacity) {

@@ -121,7 +121,6 @@ pub const Node = struct {
         }
         std.debug.print(Ansi.Reset, .{});
 
-        // Print the node type and recurse into children
         switch (self.tag) {
             .Program => {
                 std.debug.print("Program\n", .{});

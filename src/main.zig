@@ -8,6 +8,7 @@ const Node = @import("node.zig").Node;
 const Parser = @import("parser.zig").Parser;
 const Value = @import("value.zig").Value;
 const Luna = @import("luna.zig").Luna;
+const Chunk = @import("chunk.zig").Chunk;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -30,18 +31,6 @@ pub fn main() !void {
             break :repl;
         }
 
-        // try stdout.print("{s}\n", .{line});
-        //var lexer = Lexer.init(line);
-        //scan: while (true) {
-        //    var token = lexer.next() catch {
-        //        break :scan;
-        //    };
-        //    token.showInSource(line, Ansi.Cyan);
-        //    if (token.matchTag(Token.Tag.EndOfFile)) {
-        //        break :scan;
-        //    }
-        //}
-
         var parser = Parser.init(allocator, line);
         var ast = parser.parse() catch {
             continue :repl;
@@ -54,5 +43,10 @@ pub fn main() !void {
         std.debug.print(Ansi.Green ++ Ansi.Bold, .{});
         result.debug();
         std.debug.print(Ansi.Reset ++ "\n", .{});
+
+        var chunk = Chunk.init(allocator);
+        defer chunk.deinit();
+        try chunk.compile(ast, line);
+        chunk.debug();
     }
 }
