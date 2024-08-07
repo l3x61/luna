@@ -4,6 +4,7 @@ const Allocator = std.mem.Allocator;
 
 const Ansi = @import("ansi.zig");
 const Array = @import("array.zig").Array;
+const String = @import("string.zig").String;
 const Token = @import("token.zig").Token;
 
 const ProgramNode = struct {
@@ -100,22 +101,22 @@ pub const Node = struct {
     }
 
     pub fn debug(self: *Node, allocator: Allocator, source: []const u8) !void {
-        var buffer = ArrayList(u8).init(allocator); // TODO: replace with string container
+        var buffer = String.init(allocator);
         defer buffer.deinit();
         try self.debugInternal(&buffer, source, true);
     }
 
-    fn debugInternal(self: *Node, prefix: *ArrayList(u8), source: []const u8, isLast: bool) !void {
+    fn debugInternal(self: *Node, prefix: *String, source: []const u8, isLast: bool) !void {
         std.debug.print(Ansi.Dim ++ "{s}", .{prefix.items});
         var _prefix = try prefix.clone();
         defer _prefix.deinit();
         if (!isLast) {
             std.debug.print("├── ", .{});
-            try _prefix.appendSlice("│   ");
+            try _prefix.append("│   ");
         } else {
             if (self.tag != Node.Tag.Program) {
                 std.debug.print("└── ", .{});
-                try _prefix.appendSlice("    ");
+                try _prefix.append("    ");
             }
         }
         std.debug.print(Ansi.Reset, .{});
