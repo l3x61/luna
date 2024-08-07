@@ -113,12 +113,13 @@ pub const Value = struct {
         }
     }
 
-    // TODO: use custom formatter
-    pub fn debug(self: Value) void {
+    pub fn format(self: Value, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         switch (self.tag) {
-            .Null => std.debug.print("null", .{}),
-            .Boolean => std.debug.print("{s}", .{if (self.as.boolean) "true" else "false"}),
-            .Number => std.debug.print("{d}", .{self.as.number}),
+            .Null => try writer.print("null", .{}),
+            .Boolean => try writer.print("{s}", .{if (self.as.boolean) "true" else "false"}),
+            .Number => try writer.print("{d}", .{self.as.number}),
         }
     }
 };

@@ -18,8 +18,10 @@ pub const OpCode = enum(u8) {
     NEG,
     RETURN,
 
-    pub fn toString(self: OpCode) []const u8 {
-        return @tagName(self);
+    pub fn format(self: OpCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{s}", .{@tagName(self)});
     }
 };
 
@@ -82,22 +84,22 @@ pub const Chunk = struct {
                     const low: usize = self.bytecode.items[i + 3];
                     const index: usize = high << 16 | mid << 8 | low;
                     //const value = self.constants.items[index];
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {s} {d}\n", .{
+                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}\n", .{
                         i,
                         byte,
                         high,
                         mid,
                         low,
-                        @as(OpCode, @enumFromInt(byte)).toString(),
+                        @as(OpCode, @enumFromInt(byte)),
                         index,
                     });
-                    i += 3;
+                    i += 3; // i += 1 is part of the loop iteration
                 },
                 else => {
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {s}\n", .{
+                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {}\n", .{
                         i,
                         byte,
-                        @as(OpCode, @enumFromInt(byte)).toString(),
+                        @as(OpCode, @enumFromInt(byte)),
                     });
                 },
             }
@@ -128,7 +130,7 @@ pub const Chunk = struct {
                     .StarStar => try self.pushOpCode(.POW),
                     .Slash => try self.pushOpCode(.DIV),
                     .Percent => try self.pushOpCode(.MOD),
-                    else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag.toString()}),
+                    else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag}),
                 }
             },
             .Unary => {
@@ -137,7 +139,7 @@ pub const Chunk = struct {
                 switch (node.operator.tag) {
                     .Plus => return, // NO OP ?
                     .Minus => try self.pushOpCode(.NEG),
-                    else => std.debug.panic("{s} not defined for unary node", .{node.operator.tag.toString()}),
+                    else => std.debug.panic("{} not defined for unary node", .{node.operator.tag}),
                 }
             },
             .Primary => {
@@ -145,7 +147,7 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    else => std.debug.panic("{s} not defined for primary node", .{node.operand.tag.toString()}),
+                    else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
                 try self.pushConstant(value);
             },

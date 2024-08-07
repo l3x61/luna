@@ -103,7 +103,7 @@ pub const Parser = struct {
         if (token.matchTags(expected)) {
             return token;
         } else {
-            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: {s}\n", .{token.tag.toString()});
+            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: {}\n", .{token.tag});
             token.showInSource(self.lexer.source, Ansi.Red);
             return Error.SyntaxError;
         }

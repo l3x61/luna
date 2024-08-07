@@ -38,11 +38,8 @@ pub fn main() !void {
         defer ast.free(allocator);
         try ast.debug(allocator, line);
 
-        var result = try Luna.evaluate(ast, line);
-
-        std.debug.print(Ansi.Green ++ Ansi.Bold, .{});
-        result.debug();
-        std.debug.print(Ansi.Reset ++ "\n", .{});
+        const result = try Luna.evaluate(ast, line);
+        std.debug.print(Ansi.Green ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "\n", .{result});
 
         var chunk = Chunk.init(allocator);
         defer chunk.deinit();

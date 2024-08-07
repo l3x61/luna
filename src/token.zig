@@ -24,8 +24,10 @@ pub const Token = struct {
         ErrorCharacter,
         EndOfFile,
 
-        pub fn toString(kind: Tag) []const u8 {
-            return @tagName(kind);
+        pub fn format(self: Tag, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = fmt;
+            _ = options;
+            try writer.print("{s}", .{@tagName(self)});
         }
     };
 

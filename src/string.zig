@@ -50,6 +50,12 @@ pub const String = struct {
         }
     }
 
+    pub fn format(self: String, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{s}", .{self.items});
+    }
+
     fn doubleCapacity(self: *String) Error!void {
         const old_length = self.items.len;
         const new_capacity = switch (self.capacity) {

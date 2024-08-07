@@ -26,7 +26,7 @@ pub const Luna = struct {
                     .StarStar => return Value.power(left, right),
                     .Slash => return try Value.divide(left, right),
                     .Percent => return try Value.modulo(left, right),
-                    else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag.toString()}),
+                    else => std.debug.panic("{} not defined for binary node", .{node.operator.tag}),
                 }
             },
             .Unary => {
@@ -35,14 +35,14 @@ pub const Luna = struct {
                 switch (node.operator.tag) {
                     .Plus => return value,
                     .Minus => return Value.negate(value),
-                    else => std.debug.panic("{s} not defined for unary node", .{node.operator.tag.toString()}),
+                    else => std.debug.panic("{} not defined for unary node", .{node.operator.tag}),
                 }
             },
             .Primary => {
                 const node = root.as.primary;
                 switch (node.operand.tag) {
                     .Number => return Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    else => std.debug.panic("{s} not defined for primary node", .{node.operand.tag.toString()}),
+                    else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
             },
         }
