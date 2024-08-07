@@ -122,7 +122,7 @@ pub const Chunk = struct {
                     const low: usize = self.bytecode.items[i + 3];
                     const index: usize = high << 16 | mid << 8 | low;
                     const value = self.constants.items[index];
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  {}\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value });
+                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  ({}: {})\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value.tag, value });
                     i += 3; // i += 1 is part of the loop iteration
                 },
                 else => {

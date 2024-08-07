@@ -10,14 +10,10 @@ pub const Value = struct {
         Boolean,
         Number,
 
-        pub fn format(self: Value, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(self: Tag, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             _ = fmt;
             _ = options;
-            try writer.print("{s}", .{switch (self) {
-                .Null => "Null",
-                .Boolean => "Boolean",
-                .Number => "Number",
-            }});
+            try writer.print("{s}", .{@tagName(self)});
         }
     };
 
