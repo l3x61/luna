@@ -9,6 +9,7 @@ const Parser = @import("parser.zig").Parser;
 const Value = @import("value.zig").Value;
 const Luna = @import("luna.zig").Luna;
 const Chunk = @import("chunk.zig").Chunk;
+const Vm = @import("vm.zig").Vm;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -45,5 +46,10 @@ pub fn main() !void {
         defer chunk.deinit();
         try chunk.compile(ast, line);
         chunk.debug();
+
+        var vm = Vm.init(allocator, chunk);
+        defer vm.deinit();
+        try vm.run();
+        vm.printTop();
     }
 }

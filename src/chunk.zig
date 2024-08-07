@@ -16,13 +16,19 @@ pub const OpCode = enum(u8) {
     DIV,
     MOD,
     NEG,
-    RETURN,
+    HALT,
 
     pub fn format(self: OpCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
         _ = options;
         try writer.print("{s}", .{@tagName(self)});
     }
+};
+
+pub const Instruction = struct {
+    opcode: OpCode,
+    index: u24,
+    next: usize,
 };
 
 pub const Chunk = struct {
@@ -47,15 +53,15 @@ pub const Chunk = struct {
         self.constants.deinit();
     }
 
-    pub fn pushByte(self: *Chunk, byte: u8) !void {
+    fn pushByte(self: *Chunk, byte: u8) !void {
         try self.bytecode.push(byte);
     }
 
-    pub fn pushOpCode(self: *Chunk, opCode: OpCode) !void {
+    fn pushOpCode(self: *Chunk, opCode: OpCode) !void {
         try self.pushByte(@intFromEnum(opCode));
     }
 
-    pub fn pushConstant(self: *Chunk, value: Value) !void {
+    fn pushConstant(self: *Chunk, value: Value) !void {
         var index: usize = undefined;
         if (self.constants.find(value, Value.equalStrict)) |found| {
             index = found;
@@ -72,6 +78,38 @@ pub const Chunk = struct {
         try self.pushByte(@intCast(index));
     }
 
+    pub fn getInstruction(self: *Chunk, index: usize) Instruction {
+        if (index >= self.bytecode.items.len) { // NOTE: throw an error ?
+            return Instruction{
+                .opcode = .HALT,
+                .index = 0,
+                .next = index,
+            };
+        }
+        const opcode = @as(OpCode, @enumFromInt(self.bytecode.items[index]));
+        switch (opcode) {
+            .CONST => {
+                const high: u24 = @as(u24, self.bytecode.items[index + 1]) << 16;
+                const mid: u24 = @as(u24, self.bytecode.items[index + 2]) << 8;
+                const low: u24 = self.bytecode.items[index + 3];
+                return Instruction{
+                    .opcode = opcode,
+                    .index = high | mid | low,
+                    .next = index + 4,
+                };
+            },
+            else => return Instruction{
+                .opcode = opcode,
+                .index = 0,
+                .next = index + 1,
+            },
+        }
+    }
+
+    pub fn getConstant(self: *Chunk, index: usize) Value {
+        return self.constants.items[index];
+    }
+
     pub fn debug(self: *Chunk) void {
         const bytes = self.bytecode.items.len;
         var i: usize = 0;
@@ -83,24 +121,12 @@ pub const Chunk = struct {
                     const mid: usize = self.bytecode.items[i + 2];
                     const low: usize = self.bytecode.items[i + 3];
                     const index: usize = high << 16 | mid << 8 | low;
-                    //const value = self.constants.items[index];
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}\n", .{
-                        i,
-                        byte,
-                        high,
-                        mid,
-                        low,
-                        @as(OpCode, @enumFromInt(byte)),
-                        index,
-                    });
+                    const value = self.constants.items[index];
+                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  {}\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value });
                     i += 3; // i += 1 is part of the loop iteration
                 },
                 else => {
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {}\n", .{
-                        i,
-                        byte,
-                        @as(OpCode, @enumFromInt(byte)),
-                    });
+                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {}\n", .{ i, byte, @as(OpCode, @enumFromInt(byte)) });
                 },
             }
         }
@@ -117,7 +143,7 @@ pub const Chunk = struct {
                         try self.pushOpCode(.POP);
                     }
                 }
-                try self.pushOpCode(.RETURN);
+                try self.pushOpCode(.HALT);
             },
             .Binary => {
                 const node = root.as.binary;

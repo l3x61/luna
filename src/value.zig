@@ -9,6 +9,16 @@ pub const Value = struct {
         Null,
         Boolean,
         Number,
+
+        pub fn format(self: Value, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = fmt;
+            _ = options;
+            try writer.print("{s}", .{switch (self) {
+                .Null => "Null",
+                .Boolean => "Boolean",
+                .Number => "Number",
+            }});
+        }
     };
 
     const Union = union {
