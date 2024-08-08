@@ -14,14 +14,16 @@ pub const Vm = struct {
     chunk: Chunk,
     ip: usize,
 
+    const StackSize = 1024;
+
     const Errror = error{
         StackUnderflow,
     };
 
-    pub fn init(allocator: Allocator, chunk: Chunk) Vm {
-        return Vm{ // TODO: reserve stack space
+    pub fn init(allocator: Allocator, chunk: Chunk) !Vm {
+        return Vm{
             .allocator = allocator,
-            .stack = Array(Value).init(allocator),
+            .stack = try Array(Value).initCapacity(allocator, StackSize),
             .chunk = chunk,
             .ip = 0,
         };

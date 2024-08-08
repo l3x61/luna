@@ -21,6 +21,14 @@ pub fn Array(comptime Type: type) type {
             };
         }
 
+        pub fn initCapacity(allocator: Allocator, capacity: usize) Error!Self {
+            var self = Self.init(allocator);
+            while (self.capacity < capacity) { // TODO: find a constant time algorithm
+                try self.doubleCapacity();
+            }
+            return self;
+        }
+
         pub fn deinit(self: *Self) void {
             if (self.capacity != 0) {
                 self.allocator.free(self.items.ptr[0..self.capacity]);

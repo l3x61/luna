@@ -47,7 +47,7 @@ pub fn main() !void {
         try chunk.compile(ast, line);
         chunk.debug();
 
-        var vm = Vm.init(allocator, chunk);
+        var vm = try Vm.init(allocator, chunk);
         defer vm.deinit();
         try vm.run();
         vm.printTop();
