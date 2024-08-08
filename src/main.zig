@@ -7,7 +7,6 @@ const Lexer = @import("lexer.zig").Lexer;
 const Node = @import("node.zig").Node;
 const Parser = @import("parser.zig").Parser;
 const Value = @import("value.zig").Value;
-const Luna = @import("luna.zig").Luna;
 const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
 
@@ -38,9 +37,6 @@ pub fn main() !void {
         };
         defer ast.free(allocator);
         try ast.debug(allocator, line);
-
-        const result = try Luna.evaluate(ast, line);
-        std.debug.print(Ansi.Green ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "\n", .{result});
 
         var chunk = Chunk.init(allocator);
         defer chunk.deinit();
