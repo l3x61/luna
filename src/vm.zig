@@ -83,7 +83,6 @@ pub const Vm = struct {
                     try self.stackPush(Value.negate(value));
                 },
                 .HALT => return,
-                // else => std.debug.panic("unhandled instruction: {}\n", .{instruction.opcode}),
             }
         }
     }

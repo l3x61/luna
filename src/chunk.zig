@@ -79,7 +79,7 @@ pub const Chunk = struct {
     }
 
     pub fn getInstruction(self: *Chunk, index: usize) Instruction {
-        if (index >= self.bytecode.items.len) { // NOTE: throw an error ?
+        if (index >= self.bytecode.items.len) {
             return Instruction{
                 .opcode = .HALT,
                 .index = 0,
@@ -123,7 +123,7 @@ pub const Chunk = struct {
                     const index: usize = high << 16 | mid << 8 | low;
                     const value = self.constants.items[index];
                     std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  ({}: {})\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value.tag, value });
-                    i += 3; // i += 1 is part of the loop iteration
+                    i += 3;
                 },
                 else => {
                     std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {}\n", .{ i, byte, @as(OpCode, @enumFromInt(byte)) });
@@ -176,7 +176,7 @@ pub const Chunk = struct {
                 const node = root.as.unary;
                 try self.compile(node.operand, source);
                 switch (node.operator.tag) {
-                    .Plus => return, // NO OP ?
+                    .Plus => return,
                     .Minus => try self.pushOpCode(.NEG),
                     else => std.debug.panic("{} not defined for unary node", .{node.operator.tag}),
                 }
