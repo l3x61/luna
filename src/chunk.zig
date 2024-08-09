@@ -145,6 +145,19 @@ pub const Chunk = struct {
                 }
                 try self.pushOpCode(.HALT);
             },
+            .Block => {
+                const node = root.as.block;
+                const last = node.statements.last() orelse {
+                    try self.pushConstant(Value.init());
+                    return;
+                };
+                for (node.statements.items) |statement| {
+                    try self.compile(statement, source);
+                    if (statement != last) {
+                        try self.pushOpCode(.POP);
+                    }
+                }
+            },
             .Binary => {
                 const node = root.as.binary;
                 try self.compile(node.left, source);

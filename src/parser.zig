@@ -22,6 +22,10 @@ pub const Parser = struct {
     }
 
     pub fn parse(self: *Parser) !*Node {
+        return self.parseProgram();
+    }
+
+    pub fn parseProgram(self: *Parser) !*Node {
         const node = try Node.initProgramNode(self.allocator);
         errdefer node.free(self.allocator);
         while (self.token.tag != Token.Tag.EndOfFile) {
@@ -30,10 +34,22 @@ pub const Parser = struct {
         return node;
     }
 
-    fn parseStatement(self: *Parser) !*Node {
+    fn parseStatement(self: *Parser) anyerror!*Node {
         switch (self.token.tag) {
+            .LeftBrace => return try self.parseBlock(),
             else => return try self.parseExpression(),
         }
+    }
+
+    pub fn parseBlock(self: *Parser) !*Node {
+        const node = try Node.initBlockNode(self.allocator);
+        errdefer node.free(self.allocator);
+        _ = try self.eatTag(.LeftBrace);
+        while (self.token.tag != Token.Tag.RightBrace) {
+            try node.as.block.statements.push(try self.parseStatement());
+        }
+        _ = try self.eatTag(.RightBrace);
+        return node;
     }
 
     fn parseExpression(self: *Parser) !*Node {

@@ -19,6 +19,8 @@ pub const Token = struct {
         Equal,
         LeftParenthesis,
         RightParenthesis,
+        LeftBrace,
+        RightBrace,
         ErrorStringNewline,
         ErrorStringOpen,
         ErrorCharacter,

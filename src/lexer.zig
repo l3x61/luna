@@ -106,6 +106,16 @@ pub const Lexer = struct {
             return Token.init(.RightParenthesis, self.cursor - 1, 1);
         }
 
+        if (c == '{') {
+            self.advance();
+            return Token.init(.LeftBrace, self.cursor - 1, 1);
+        }
+
+        if (c == '}') {
+            self.advance();
+            return Token.init(.RightBrace, self.cursor - 1, 1);
+        }
+
         if (self.isDigit()) {
             const start = self.cursor;
             while (!self.isEndOfFile() and self.isDigit()) {

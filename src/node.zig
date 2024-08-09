@@ -11,6 +11,10 @@ const ProgramNode = struct {
     statements: Array(*Node),
 };
 
+const BlockNode = struct {
+    statements: Array(*Node),
+};
+
 const BinaryNode = struct {
     operator: Token,
     left: *Node,
@@ -29,6 +33,7 @@ const PrimaryNode = struct {
 pub const Node = struct {
     const Tag = enum {
         Program,
+        Block,
         Binary,
         Unary,
         Primary,
@@ -43,6 +48,7 @@ pub const Node = struct {
 
     const Union = union {
         program: ProgramNode,
+        block: BlockNode,
         binary: BinaryNode,
         unary: UnaryNode,
         primary: PrimaryNode,
@@ -52,6 +58,13 @@ pub const Node = struct {
         var node = try allocator.create(Node);
         node.tag = Node.Tag.Program;
         node.as = Union{ .program = ProgramNode{ .statements = Array(*Node).init(allocator) } };
+        return node;
+    }
+
+    pub fn initBlockNode(allocator: Allocator) !*Node {
+        var node = try allocator.create(Node);
+        node.tag = Node.Tag.Block;
+        node.as = Union{ .block = BlockNode{ .statements = Array(*Node).init(allocator) } };
         return node;
     }
 
@@ -83,6 +96,13 @@ pub const Node = struct {
                     statement.free(allocator);
                 }
                 self.as.program.statements.deinit();
+                allocator.destroy(self);
+            },
+            .Block => {
+                for (self.as.block.statements.items) |statement| {
+                    statement.free(allocator);
+                }
+                self.as.block.statements.deinit();
                 allocator.destroy(self);
             },
             .Binary => {
@@ -129,18 +149,25 @@ pub const Node = struct {
                     try statement.debugInternal(&_prefix, source, isLastStatement);
                 }
             },
+            .Block => {
+                std.debug.print("Block\n", .{});
+                for (self.as.block.statements.items, 0..) |statement, index| {
+                    const isLastStatement = index == self.as.block.statements.items.len - 1;
+                    try statement.debugInternal(&_prefix, source, isLastStatement);
+                }
+            },
             .Binary => {
-                std.debug.print("BinaryExpression {[operator]s}\n", .{ .operator = self.as.binary.operator.lexeme(source) });
+                std.debug.print("Binary {[operator]s}\n", .{ .operator = self.as.binary.operator.lexeme(source) });
                 try self.as.binary.left.debugInternal(&_prefix, source, false);
                 try self.as.binary.right.debugInternal(&_prefix, source, true);
             },
             .Unary => {
-                std.debug.print("UnaryExpression {[operator]s}\n", .{ .operator = self.as.unary.operator.lexeme(source) });
+                std.debug.print("Unary {[operator]s}\n", .{ .operator = self.as.unary.operator.lexeme(source) });
                 try self.as.unary.operand.debugInternal(&_prefix, source, true);
             },
             .Primary => {
                 const operand = self.as.primary.operand;
-                std.debug.print("PrimaryExpression {[operand]s}\n", .{ .operand = operand.lexeme(source) });
+                std.debug.print("Primary {[operand]s}\n", .{ .operand = operand.lexeme(source) });
             },
         }
     }

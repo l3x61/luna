@@ -27,7 +27,12 @@ program
     ;
 
 statement
-    : expression
+    : block
+    | expression
+    ;
+
+block
+    : '{' statement* '}'
     ;
 
 expression
@@ -53,7 +58,6 @@ primary
 ```
 
 ## Resources
-A list of resources (in no particular order) that I found while working on this project.
 * [Writing an Interpreter/Compiler in Go](https://interpreterbook.com/)
 * [Crafting Interpreters](https://craftinginterpreters.com/)
 * [Building the fastest Lua interpreter.. automatically!](https://sillycross.github.io/2022/11/22/2022-11-22/)
