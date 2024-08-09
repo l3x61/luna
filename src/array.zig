@@ -1,6 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const utils = @import("utils.zig");
+
 pub fn Array(comptime Type: type) type {
     return struct {
         items: []Type,
@@ -23,9 +25,11 @@ pub fn Array(comptime Type: type) type {
 
         pub fn initCapacity(allocator: Allocator, capacity: usize) Error!Self {
             var self = Self.init(allocator);
-            while (self.capacity < capacity) { // TODO: find a constant time algorithm
-                try self.doubleCapacity();
-            }
+            const new_capacity = utils.nextPowerOf2(capacity);
+            self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
+                return Error.OutOfMemory;
+            };
+            self.capacity = new_capacity;
             return self;
         }
 

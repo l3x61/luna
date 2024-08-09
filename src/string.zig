@@ -1,6 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const utils = @import("utils.zig");
+
 pub const String = struct {
     items: []u8,
     capacity: usize,
@@ -41,8 +43,7 @@ pub const String = struct {
 
     pub fn append(self: *String, slice: []const u8) Error!void {
         while (self.capacity < self.items.len + slice.len) {
-            // TODO: find a constant time algo
-            try self.doubleCapacity();
+            try self.setCapacity(utils.nextPowerOf2(self.items.len + slice.len));
         }
         for (slice) |c| {
             self.items.ptr[self.items.len] = c;
@@ -56,13 +57,8 @@ pub const String = struct {
         try writer.print("{s}", .{self.items});
     }
 
-    fn doubleCapacity(self: *String) Error!void {
+    fn setCapacity(self: *String, new_capacity: usize) Error!void {
         const old_length = self.items.len;
-        const new_capacity = switch (self.capacity) {
-            0 => 1,
-            std.math.maxInt(usize) => return Error.OutOfMemory,
-            else => self.capacity * 2,
-        };
         self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
             return Error.OutOfMemory;
         };
