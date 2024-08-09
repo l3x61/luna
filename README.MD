@@ -1,6 +1,15 @@
 # Luna
 An experimental scripting language written in Zig.
 
+## Operators & Percedence
+| Precedence  | Operators | Associativity | Description |
+|-------------|-----------|---------------|-------------|
+| 5           | `()`      |               | Grouping |
+| 4           | `-` `+`   | Right         | Unary negation and identity |
+| 3           | `**`      | Right         | Exponentiation |
+| 2           | `*` `/`   | Left          | Multiplication and division |
+| 1           | `+` `-`   | Left          | Addition and subtraction |
+
 ## Grammar
 ```g4
 grammar luna;
@@ -54,6 +63,7 @@ unary
 
 primary
     : NUMBER | STRING | IDENTIFIER
+    | '(' expression ')'
     ;
 ```
 

@@ -53,7 +53,7 @@ pub const Parser = struct {
     }
 
     fn parseExpression(self: *Parser) !*Node {
-        return self.parseAdditiveExpression();
+        return try self.parseAdditiveExpression();
     }
 
     fn parseAdditiveExpression(self: *Parser) !*Node {
@@ -105,21 +105,45 @@ pub const Parser = struct {
     }
 
     fn parsePrimaryExpression(self: *Parser) !*Node {
-        const operand = try self.eatTags(PrimaryTokenTags);
-        return try Node.initPrimaryNode(self.allocator, operand);
+        switch (self.token.tag) {
+            .LeftParenthesis => return try self.parseGroupingExpression(),
+            else => {
+                const operand = try self.eatTags(PrimaryTokenTags);
+                return try Node.initPrimaryNode(self.allocator, operand);
+            },
+        }
     }
 
-    fn eatTag(self: *Parser, expected: Token.Tag) Parser.Error!Token {
+    fn parseGroupingExpression(self: *Parser) anyerror!*Node {
+        _ = try self.eatTag(.LeftParenthesis);
+        const node = try self.parseExpression();
+        _ = try self.eatTag(.RightParenthesis);
+        return node;
+    }
+
+    fn eatTag(self: *Parser, expected: Token.Tag) !Token {
         return self.eatTags(&[_]Token.Tag{expected});
     }
 
-    fn eatTags(self: *Parser, expected: []const Token.Tag) Parser.Error!Token {
+    fn eatTags(self: *Parser, expected: []const Token.Tag) !Token {
         const token = self.token;
         self.token = self.lexer.next();
         if (token.matchTags(expected)) {
             return token;
         } else {
-            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: {}\n", .{token.tag});
+            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: " ++ Ansi.Red ++ " {} " ++ Ansi.Reset ++ "expected " ++ Ansi.Green, .{token.tag});
+            switch (expected.len) {
+                0 => unreachable,
+                1 => std.debug.print("{}", .{expected[0]}),
+                2 => std.debug.print("{}" ++ Ansi.Reset ++ " or " ++ Ansi.Green ++ "{}", .{ expected[0], expected[1] }),
+                else => {
+                    for (expected[0 .. expected.len - 2]) |tag| {
+                        std.debug.print("{}, ", .{tag});
+                    }
+                    std.debug.print("{}" ++ Ansi.Reset ++ " or " ++ Ansi.Green ++ "{}", .{ expected[expected.len - 2], expected[expected.len - 1] });
+                },
+            }
+            std.debug.print("\n" ++ Ansi.Reset, .{});
             token.showInSource(self.lexer.source, Ansi.Red);
             return Error.SyntaxError;
         }
