@@ -14,8 +14,6 @@ pub const Vm = struct {
     chunk: Chunk,
     ip: usize,
 
-    const StackSize = 1024;
-
     const Errror = error{
         StackUnderflow,
     };
@@ -23,7 +21,7 @@ pub const Vm = struct {
     pub fn init(allocator: Allocator, chunk: Chunk) !Vm {
         return Vm{
             .allocator = allocator,
-            .stack = try Array(Value).initCapacity(allocator, StackSize),
+            .stack = try Array(Value).initCapacity(allocator, 1024),
             .chunk = chunk,
             .ip = 0,
         };
@@ -52,38 +50,38 @@ pub const Vm = struct {
                 .CONST => try self.stackPush(self.chunk.getConstant(instruction.index)),
                 .POP => _ = try self.stackPop(),
                 .ADD => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(Value.add(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(left + right));
                 },
                 .SUB => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(Value.subtract(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(left - right));
                 },
                 .MUL => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(Value.multiply(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(left * right));
                 },
                 .POW => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(Value.power(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(std.math.pow(f64, left, right)));
                 },
                 .DIV => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(try Value.divide(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(left / right));
                 },
                 .MOD => {
-                    const right = try self.stackPop();
-                    const left = try self.stackPop();
-                    try self.stackPush(try Value.modulo(left, right));
+                    const right = (try self.stackPop()).toNumber();
+                    const left = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(@mod(left, right)));
                 },
                 .NEG => {
-                    const value = try self.stackPop();
-                    try self.stackPush(Value.negate(value));
+                    const value = (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initNumber(-value));
                 },
                 .HALT => return,
             }

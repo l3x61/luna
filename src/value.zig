@@ -95,49 +95,7 @@ pub const Value = struct {
         }
     }
 
-    pub fn negate(right: Value) Value {
-        return Value.initNumber(-right.toNumber());
-    }
-
-    pub fn add(left: Value, right: Value) Value {
-        return Value.initNumber(left.toNumber() + right.toNumber());
-    }
-
-    pub fn subtract(left: Value, right: Value) Value {
-        return Value.initNumber(left.toNumber() - right.toNumber());
-    }
-
-    pub fn multiply(left: Value, right: Value) Value {
-        return Value.initNumber(left.toNumber() * right.toNumber());
-    }
-
-    pub fn power(left: Value, right: Value) Value {
-        return Value.initNumber(std.math.pow(f64, left.toNumber(), right.toNumber()));
-    }
-
-    pub fn divide(left: Value, right: Value) !Value {
-        if (right.toNumber() == 0.0) {
-            return Error.DivisionBy0;
-        }
-        return Value.initNumber(left.toNumber() / right.toNumber());
-    }
-
-    pub fn modulo(left: Value, right: Value) !Value {
-        if (right.toNumber() == 0.0) {
-            return Error.DivisionBy0;
-        }
-        return Value.initNumber(@mod(left.toNumber(), right.toNumber()));
-    }
-
-    pub fn clone(self: *Value) Value {
-        switch (self.tag) {
-            .Null => return Value.init(),
-            .Boolean => return Value.initBoolean(self.as.boolean),
-            .Number => return Value.initNumber(self.as.number),
-        }
-    }
-
-    pub fn equalStrict(left: Value, right: Value) bool {
+    pub fn equal(left: Value, right: Value) bool {
         if (left.tag != right.tag) {
             return false;
         }
