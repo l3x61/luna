@@ -30,6 +30,9 @@ pub const Vm = struct {
     }
 
     pub fn deinit(self: *Vm) void {
+        for (self.stack.items) |*item| {
+            item.deinit();
+        }
         self.stack.deinit();
     }
 

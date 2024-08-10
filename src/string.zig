@@ -20,6 +20,18 @@ pub const String = struct {
         };
     }
 
+    pub fn initLiteral(allocator: Allocator, literal: []const u8) !String {
+        var string = String.init(allocator);
+        try string.append(literal);
+        return string;
+    }
+
+    pub fn initPrint(allocator: Allocator, comptime fmt: []const u8, args: anytype) !String {
+        var string = String.init(allocator);
+        try string.print(fmt, args);
+        return string;
+    }
+
     pub fn deinit(self: *String) void {
         if (self.capacity != 0) {
             self.allocator.free(self.items.ptr[0..self.capacity]);
@@ -51,6 +63,14 @@ pub const String = struct {
         }
     }
 
+    pub fn print(self: *String, comptime fmt: []const u8, args: anytype) Error!void {
+        // TODO: implement a writer for String
+        var list = std.ArrayList(u8).init(self.allocator);
+        defer list.deinit();
+        try list.writer().print(fmt, args);
+        try self.append(list.items);
+    }
+
     pub fn format(self: String, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
         _ = options;
@@ -67,20 +87,30 @@ pub const String = struct {
     }
 };
 
-test "array: init/deinit" {
+test "string: init/deinit" {
     const allocator = std.testing.allocator;
     var string = String.init(allocator);
     string.deinit();
 }
 
-test "array: push" {
+test "string: push" {
     const allocator = std.testing.allocator;
     var string = String.init(allocator);
     defer string.deinit();
 
-    try string.append("Hello");
-    try string.append(" ");
-    try string.append("World");
+    _ = try string.append("Hello");
+    _ = try string.append(" ");
+    _ = try string.append("World\n");
+
+    std.debug.print("{s}", .{string.items});
+}
+
+test "string: print" {
+    const allocator = std.testing.allocator;
+    var string = String.init(allocator);
+    defer string.deinit();
+
+    _ = try string.print("Hello, {s} {d}!", .{ "World", 3.1415 });
 
     std.debug.print("{s}", .{string.items});
 }

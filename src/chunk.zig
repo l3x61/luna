@@ -50,6 +50,9 @@ pub const Chunk = struct {
 
     pub fn deinit(self: *Chunk) void {
         self.bytecode.deinit();
+        for (self.constants.items) |*constant| {
+            constant.deinit();
+        }
         self.constants.deinit();
     }
 
@@ -186,6 +189,7 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
+                    .String => value = try Value.initString(self.allocator, node.operand.lexeme(source)),
                     else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
                 try self.pushConstant(value);
