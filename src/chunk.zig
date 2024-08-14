@@ -5,6 +5,7 @@ const Ansi = @import("ansi.zig");
 const Node = @import("node.zig").Node;
 const Array = @import("array.zig").Array;
 const Value = @import("value.zig").Value;
+const Object = @import("object.zig").Object;
 
 pub const OpCode = enum(u8) {
     CONST,
@@ -64,12 +65,13 @@ pub const Chunk = struct {
         try self.pushByte(@intFromEnum(opCode));
     }
 
-    fn pushConstant(self: *Chunk, value: Value) !void {
+    fn pushConstant(self: *Chunk, value: *Value) !void {
         var index: usize = undefined;
-        if (self.constants.find(value, Value.equal)) |found| {
+        if (self.constants.find(value.*, Value.equal)) |found| {
+            value.deinit(); // TODO: is deinit'ed just after creation, ...maybe find a better way to find duplicates without allocating
             index = found;
         } else {
-            try self.constants.push(value);
+            try self.constants.push(value.*);
             index = self.constants.items.len - 1;
         }
         if (index > std.math.maxInt(u24)) {
@@ -114,6 +116,9 @@ pub const Chunk = struct {
     }
 
     pub fn debug(self: *Chunk) void {
+        for (self.constants.items, 0..) |constant, index| {
+            std.debug.print("{x:0>6}: {}\n", .{ index, constant });
+        }
         const bytes = self.bytecode.items.len;
         var i: usize = 0;
         while (i < bytes) : (i += 1) {
@@ -151,7 +156,8 @@ pub const Chunk = struct {
             .Block => {
                 const node = root.as.block;
                 const last = node.statements.last() orelse {
-                    try self.pushConstant(Value.init());
+                    var value = Value.init();
+                    try self.pushConstant(&value);
                     return;
                 };
                 for (node.statements.items) |statement| {
@@ -189,10 +195,10 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    .String => value = try Value.initString(self.allocator, node.operand.lexeme(source)),
+                    .String => value = try Value.initObject(try Object.initString(self.allocator, node.operand.lexeme(source))),
                     else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
-                try self.pushConstant(value);
+                try self.pushConstant(&value);
             },
         }
     }

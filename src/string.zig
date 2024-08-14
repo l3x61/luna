@@ -71,6 +71,10 @@ pub const String = struct {
         try self.append(list.items);
     }
 
+    pub fn equal(this: String, that: String) bool {
+        return std.mem.eql(u8, this.items, that.items);
+    }
+
     pub fn format(self: String, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
         _ = options;
