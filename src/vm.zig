@@ -59,12 +59,7 @@ pub const Vm = struct {
             self.ip = instruction.next;
             switch (instruction.opcode) {
                 .CONST => {
-                    const value = try self.chunk.getConstant(instruction.index).clone();
-                    if (value.tag == .Object) {
-                        try self.stackPush(try Value.initObject(self.trackObject(value.as.object)));
-                    } else {
-                        try self.stackPush(value);
-                    }
+                    try self.stackPush(self.chunk.getConstant(instruction.index));
                 },
                 .POP => _ = try self.stackPop(),
                 .ADD => {
