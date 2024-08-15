@@ -15,7 +15,7 @@ pub const Vm = struct {
     stack: Array(Value),
     chunk: Chunk,
     ip: usize,
-    first: ?*Object = null,
+    root: ?*Object = null,
 
     const Errror = error{
         StackUnderflow,
@@ -31,17 +31,17 @@ pub const Vm = struct {
     }
 
     pub fn deinit(self: *Vm) void {
-        while (self.first) |node| {
+        while (self.root) |node| {
             const next = node.next;
             node.deinit();
-            self.first = next;
+            self.root = next;
         }
         self.stack.deinit();
     }
 
     pub fn trackObject(self: *Vm, object: *Object) *Object {
-        object.next = self.first;
-        self.first = object;
+        object.next = self.root;
+        self.root = object;
         return object;
     }
 
