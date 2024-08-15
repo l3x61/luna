@@ -45,7 +45,11 @@ block
     ;
 
 expression
-    : additive
+    : concatenative
+    ;
+
+concatenative
+    : additive ( '..' additive )*
     ;
 
 additive

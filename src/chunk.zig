@@ -17,6 +17,7 @@ pub const OpCode = enum(u8) {
     DIV,
     MOD,
     NEG,
+    CAT,
     HALT,
 
     pub fn format(self: OpCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -178,6 +179,7 @@ pub const Chunk = struct {
                     .StarStar => try self.pushOpCode(.POW),
                     .Slash => try self.pushOpCode(.DIV),
                     .Percent => try self.pushOpCode(.MOD),
+                    .DotDot => try self.pushOpCode(.CAT),
                     else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag}),
                 }
             },
@@ -195,7 +197,7 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    .String => value = try Value.initObject(try Object.initString(self.allocator, node.operand.lexeme(source))),
+                    .String => value = try Value.initObject(try Object.initString(self.allocator, node.operand.stringValue(source))),
                     else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
                 try self.pushConstant(&value);

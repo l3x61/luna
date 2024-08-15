@@ -3,6 +3,8 @@ const Allocator = std.mem.Allocator;
 
 const ArrayList = @import("std").ArrayList;
 const Object = @import("object.zig").Object;
+const String = @import("string.zig").String;
+const Vm = @import("vm.zig").Vm;
 
 pub const Value = struct {
     tag: Tag,
@@ -55,21 +57,39 @@ pub const Value = struct {
         return Value{ .tag = Tag.Object, .as = Union{ .object = value } };
     }
 
+    pub fn clone(self: Value, vm: *Vm) !Value {
+        switch (self.tag) {
+            .Null => return self,
+            .Boolean => return self,
+            .Number => return self,
+            .Object => return initObject(try self.as.object.clone(vm)),
+        }
+    }
+
     pub fn toBoolean(self: Value) bool {
         switch (self.tag) {
             .Null => return false,
             .Boolean => return self.as.boolean,
             .Number => return self.as.number != 0.0,
-            else => std.debug.panic("Cannot convert to Boolean", .{}),
+            .Object => return self.as.object.toBoolean(),
         }
     }
 
-    pub fn toNumber(self: Value) f64 {
+    pub fn toNumber(self: Value) !f64 {
         switch (self.tag) {
             .Null => return 0.0,
             .Boolean => return if (self.as.boolean) 1.0 else 0.0,
             .Number => return self.as.number,
-            else => std.debug.panic("Cannot convert to Number", .{}),
+            .Object => return self.as.object.toNumber(),
+        }
+    }
+
+    pub fn toString(self: Value, allocator: Allocator) !String {
+        switch (self.tag) {
+            .Null => return String.initLiteral(allocator, "null"),
+            .Boolean => return String.initLiteral(allocator, if (self.as.boolean) "true" else "false"),
+            .Number => return String.initPrint(allocator, "{d}", .{self.as.number}),
+            .Object => return self.as.object.toString(),
         }
     }
 
@@ -92,7 +112,7 @@ pub const Value = struct {
             .Null => try writer.print("null", .{}),
             .Boolean => try writer.print("{s}", .{if (self.as.boolean) "true" else "false"}),
             .Number => try writer.print("{d}", .{self.as.number}),
-            .Object => try writer.print("{}", .{self.as.object}),
+            .Object => try writer.print("'{}'", .{self.as.object}),
         }
     }
 };

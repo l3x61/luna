@@ -30,7 +30,7 @@ pub fn main() !void {
         if (std.mem.eql(u8, line, "exit")) {
             break :repl;
         }
-
+        var timer = try std.time.Timer.start();
         var parser = Parser.init(allocator, line);
         var ast = parser.parse() catch {
             continue :repl;
@@ -46,6 +46,8 @@ pub fn main() !void {
         var vm = try Vm.init(allocator, chunk);
         defer vm.deinit();
         try vm.run();
+        const elapsed = @as(f64, @floatFromInt(timer.read()));
         vm.printTop();
+        try stdout.print("Elapsed: {d}ms\n", .{elapsed / std.time.ns_per_ms});
     }
 }

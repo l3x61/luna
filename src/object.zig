@@ -2,11 +2,13 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const String = @import("string.zig").String;
+const Vm = @import("vm.zig").Vm;
 
 pub const Object = struct {
     tag: Tag,
     as: Union,
     allocator: Allocator,
+    next: ?*Object = null,
 
     const Tag = enum {
         String,
@@ -14,7 +16,7 @@ pub const Object = struct {
         pub fn format(self: Tag, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             _ = fmt;
             _ = options;
-            try writer.print("{s}", .{@tagName(self)});
+            try writer.print("'{s}'", .{@tagName(self)});
         }
     };
 
@@ -29,15 +31,44 @@ pub const Object = struct {
             .as = Union{ .string = try String.initLiteral(allocator, value) },
             .allocator = allocator,
         };
-        std.debug.print("Object.initString -> {*}\n", .{object});
         return object;
+    }
+
+    pub fn clone(self: *Object, vm: *Vm) !*Object {
+        switch (self.tag) {
+            .String => {
+                var object = try initString(self.allocator, self.as.string.items);
+
+                object.next = vm.first;
+                vm.first = object;
+
+                return object;
+            },
+        }
+    }
+
+    pub fn toBoolean(self: *Object) !bool {
+        switch (self.tag) {
+            .String => return false,
+        }
+    }
+
+    pub fn toNumber(self: *Object) !f64 {
+        switch (self.tag) {
+            .String => return try std.fmt.parseFloat(f64, self.as.string.items),
+        }
+    }
+
+    pub fn toString(self: *Object) !String {
+        switch (self.tag) {
+            .String => return self.as.string.clone(),
+        }
     }
 
     pub fn deinit(self: *Object) void {
         switch (self.tag) {
             .String => self.as.string.deinit(),
         }
-        std.debug.print("Object.deinit -> {*}\n", .{self});
         self.allocator.destroy(self);
     }
 

@@ -17,6 +17,8 @@ pub const Token = struct {
         Slash,
         Percent,
         Equal,
+        Dot,
+        DotDot,
         LeftParenthesis,
         RightParenthesis,
         LeftBrace,
@@ -39,6 +41,10 @@ pub const Token = struct {
 
     pub fn lexeme(self: Token, source: []const u8) []const u8 {
         return source[self.start .. self.start + self.length];
+    }
+
+    pub fn stringValue(self: Token, source: []const u8) []const u8 {
+        return source[self.start + 1 .. self.start + self.length - 1];
     }
 
     pub fn matchTag(self: Token, tag: Tag) bool {
