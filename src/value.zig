@@ -57,12 +57,12 @@ pub const Value = struct {
         return Value{ .tag = Tag.Object, .as = Union{ .object = value } };
     }
 
-    pub fn clone(self: Value, vm: *Vm) !Value {
+    pub fn clone(self: Value) !Value {
         switch (self.tag) {
             .Null => return self,
             .Boolean => return self,
             .Number => return self,
-            .Object => return initObject(try self.as.object.clone(vm)),
+            .Object => return initObject(try self.as.object.clone()),
         }
     }
 

@@ -39,9 +39,10 @@ pub const Vm = struct {
         self.stack.deinit();
     }
 
-    pub fn trackObject(self: *Vm, object: *Object) void {
+    pub fn trackObject(self: *Vm, object: *Object) *Object {
         object.next = self.first;
         self.first = object;
+        return object;
     }
 
     fn stackPush(self: *Vm, value: Value) !void {
@@ -58,8 +59,12 @@ pub const Vm = struct {
             self.ip = instruction.next;
             switch (instruction.opcode) {
                 .CONST => {
-                    const value = try self.chunk.getConstant(instruction.index).clone(self);
-                    try self.stackPush(value);
+                    const value = try self.chunk.getConstant(instruction.index).clone();
+                    if (value.tag == .Object) {
+                        try self.stackPush(try Value.initObject(self.trackObject(value.as.object)));
+                    } else {
+                        try self.stackPush(value);
+                    }
                 },
                 .POP => _ = try self.stackPop(),
                 .ADD => {
@@ -107,10 +112,7 @@ pub const Vm = struct {
                     try string.appendString(left);
                     try string.appendString(right);
                     const object = try Object.initString(self.allocator, string.items);
-
-                    self.trackObject(object);
-
-                    try self.stackPush(try Value.initObject(object));
+                    try self.stackPush(try Value.initObject(self.trackObject(object)));
                 },
                 .HALT => return,
             }
