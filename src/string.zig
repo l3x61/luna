@@ -22,13 +22,19 @@ pub const String = struct {
 
     pub fn initLiteral(allocator: Allocator, literal: []const u8) !String {
         var string = String.init(allocator);
-        try string.append(literal);
+        try string.appendLiteral(literal);
+        return string;
+    }
+
+    pub fn initString(allocator: Allocator, other: String) !String {
+        var string = String.init(allocator);
+        try string.append(other.items);
         return string;
     }
 
     pub fn initPrint(allocator: Allocator, comptime fmt: []const u8, args: anytype) !String {
         var string = String.init(allocator);
-        try string.print(fmt, args);
+        try string.appendPrint(fmt, args);
         return string;
     }
 
@@ -53,7 +59,7 @@ pub const String = struct {
         };
     }
 
-    pub fn append(self: *String, slice: []const u8) Error!void {
+    pub fn appendLiteral(self: *String, slice: []const u8) Error!void {
         while (self.capacity < self.items.len + slice.len) {
             try self.setCapacity(utils.nextPowerOf2(self.items.len + slice.len));
         }
@@ -63,12 +69,16 @@ pub const String = struct {
         }
     }
 
-    pub fn print(self: *String, comptime fmt: []const u8, args: anytype) Error!void {
+    pub fn appendString(self: *String, other: String) Error!void {
+        try self.appendLiteral(other.items);
+    }
+
+    pub fn appendPrint(self: *String, comptime fmt: []const u8, args: anytype) Error!void {
         // TODO: implement a writer for String
         var list = std.ArrayList(u8).init(self.allocator);
         defer list.deinit();
         try list.writer().print(fmt, args);
-        try self.append(list.items);
+        try self.appendLiteral(list.items);
     }
 
     pub fn equal(this: String, that: String) bool {

@@ -99,8 +99,8 @@ pub const Vm = struct {
                     defer left.deinit();
                     var string = String.init(self.allocator);
                     defer string.deinit();
-                    try string.append(left.items);
-                    try string.append(right.items);
+                    try string.appendString(left);
+                    try string.appendString(right);
                     const object = try Object.initString(self.allocator, string.items);
 
                     object.next = self.first;

@@ -132,11 +132,11 @@ pub const Node = struct {
         defer _prefix.deinit();
         if (!isLast) {
             std.debug.print("├── ", .{});
-            try _prefix.append("│   ");
+            try _prefix.appendLiteral("│   ");
         } else {
             if (self.tag != Node.Tag.Program) {
                 std.debug.print("└── ", .{});
-                try _prefix.append("    ");
+                try _prefix.appendLiteral("    ");
             }
         }
         std.debug.print(Ansi.Reset, .{});
