@@ -37,11 +37,8 @@ pub const Object = struct {
     pub fn clone(self: *Object, vm: *Vm) !*Object {
         switch (self.tag) {
             .String => {
-                var object = try initString(self.allocator, self.as.string.items);
-
-                object.next = vm.first;
-                vm.first = object;
-
+                const object = try initString(self.allocator, self.as.string.items);
+                vm.trackObject(object);
                 return object;
             },
         }
