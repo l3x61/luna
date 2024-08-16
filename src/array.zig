@@ -13,6 +13,7 @@ pub fn Array(comptime Type: type) type {
 
         pub const Error = error{
             OutOfMemory,
+            OutOfBounds,
         };
 
         pub fn init(allocator: Allocator) Self {
@@ -62,6 +63,30 @@ pub fn Array(comptime Type: type) type {
                 return self.items.ptr[self.items.len];
             }
             return null;
+        }
+
+        pub fn insert(self: *Self, item: Type, index: usize) Error!void {
+            if (index > self.items.len) {
+                return Error.OutOfBounds;
+            }
+            if (self.items.len + 1 >= self.capacity) {
+                try self.doubleCapacity();
+            }
+            for (self.items, self.items.len..index) |current, i| {
+                self.items.ptr[i + 1] = current;
+            }
+            self.items.ptr[index] = item;
+            self.items.len += 1;
+        }
+
+        pub fn remove(self: *Self, index: usize) Error!void {
+            if (index >= self.items.len) {
+                return Error.OutOfBounds;
+            }
+            for (index..self.items.len) |i| {
+                self.items.ptr[i] = self.items.ptr[i + 1];
+            }
+            self.items.len -= 1;
         }
 
         pub fn find(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
