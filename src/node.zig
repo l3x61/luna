@@ -126,11 +126,11 @@ pub const Node = struct {
         try self.debugInternal(&buffer, source, true);
     }
 
-    fn debugInternal(self: *Node, prefix: *String, source: []const u8, isLast: bool) !void {
+    fn debugInternal(self: *Node, prefix: *String, source: []const u8, is_last: bool) !void {
         std.debug.print(Ansi.Dim ++ "{s}", .{prefix.buffer});
         var _prefix = try prefix.clone();
         defer _prefix.deinit();
-        if (!isLast) {
+        if (!is_last) {
             std.debug.print("├── ", .{});
             try _prefix.appendLiteral("│   ");
         } else {
@@ -145,15 +145,15 @@ pub const Node = struct {
             .Program => {
                 std.debug.print("Program\n", .{});
                 for (self.as.program.statements.items, 0..) |statement, index| {
-                    const isLastStatement = index == self.as.program.statements.count() - 1;
-                    try statement.debugInternal(&_prefix, source, isLastStatement);
+                    const is_last_statement = index == self.as.program.statements.count() - 1;
+                    try statement.debugInternal(&_prefix, source, is_last_statement);
                 }
             },
             .Block => {
                 std.debug.print("Block\n", .{});
                 for (self.as.block.statements.items, 0..) |statement, index| {
-                    const isLastStatement = index == self.as.block.statements.count() - 1;
-                    try statement.debugInternal(&_prefix, source, isLastStatement);
+                    const is_last_statement = index == self.as.block.statements.count() - 1;
+                    try statement.debugInternal(&_prefix, source, is_last_statement);
                 }
             },
             .Binary => {
