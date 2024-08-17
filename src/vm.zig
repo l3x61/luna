@@ -40,10 +40,16 @@ pub const Vm = struct {
         self.stack.deinit();
     }
 
-    pub fn trackObject(self: *Vm, object: *Object) *Object {
+    fn trackValue(self: *Vm, value: Value) void {
+        if (value.tag == .Object) {
+            value.as.object.next = self.root;
+            self.root = value.as.object;
+        }
+    }
+
+    fn trackObject(self: *Vm, object: *Object) void {
         object.next = self.root;
         self.root = object;
-        return object;
     }
 
     fn stackPush(self: *Vm, value: Value) !void {
@@ -98,17 +104,17 @@ pub const Vm = struct {
                     try self.stackPush(Value.initNumber(-value));
                 },
                 .CAT => {
-                    // TODO: instead of deiniting the strings now, return an object and add it to the linked list of objects to save time ?
                     var right = try (try self.stackPop()).toString(self.allocator);
                     defer right.deinit();
+
                     var left = try (try self.stackPop()).toString(self.allocator);
                     defer left.deinit();
-                    var string = String.init(self.allocator);
-                    defer string.deinit();
-                    try string.appendString(left);
-                    try string.appendString(right);
-                    const object = try Object.initString(self.allocator, string.buffer);
-                    try self.stackPush(try Value.initObject(self.trackObject(object)));
+
+                    try left.appendString(right);
+                    const object = try Object.initString(self.allocator, left.buffer);
+                    self.trackObject(object);
+
+                    try self.stackPush(try Value.initObject(object));
                 },
                 .HALT => return,
             }
