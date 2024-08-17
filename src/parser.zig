@@ -156,7 +156,7 @@ pub const Parser = struct {
         if (token.matchTags(expected)) {
             return token;
         } else {
-            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: " ++ Ansi.Red ++ " {} " ++ Ansi.Reset ++ "expected " ++ Ansi.Green, .{token.tag});
+            std.debug.print(Ansi.Red ++ "error" ++ Ansi.Reset ++ " unexpected token: " ++ Ansi.Red ++ "{}" ++ Ansi.Reset ++ " expected " ++ Ansi.Green, .{token.tag});
             switch (expected.len) {
                 0 => unreachable,
                 1 => std.debug.print("{}", .{expected[0]}),
@@ -173,6 +173,8 @@ pub const Parser = struct {
             return Error.SyntaxError;
         }
     }
+
+    // vvvv TODO: use a LUT ?
 
     const AdditiveTokenTags = &[_]Token.Tag{
         .Plus,
@@ -191,8 +193,13 @@ pub const Parser = struct {
     };
 
     const PrimaryTokenTags = &[_]Token.Tag{
-        .Identifier,
+        .KeywordNull,
+        .KeywordTrue,
+        .KeywordFalse,
         .Number,
         .String,
+        .Identifier,
     };
+
+    // ^^^^ TODO: use a LUT ?
 };

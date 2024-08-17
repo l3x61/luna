@@ -209,6 +209,15 @@ pub const Chunk = struct {
                 const node = root.as.primary;
                 var value: Value = undefined;
                 switch (node.operand.tag) {
+                    .KeywordNull => {
+                        value = Value.init();
+                    },
+                    .KeywordTrue => {
+                        value = Value.initBoolean(true);
+                    },
+                    .KeywordFalse => {
+                        value = Value.initBoolean(false);
+                    },
                     .Number => {
                         const number = try std.fmt.parseFloat(f64, node.operand.lexeme(source));
                         value = Value.initNumber(number);

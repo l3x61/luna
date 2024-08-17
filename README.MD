@@ -75,7 +75,7 @@ unary
     ;
 
 primary
-    : NUMBER | STRING | IDENTIFIER
+    : 'null' | 'true' | 'false' | NUMBER | STRING | IDENTIFIER
     | '(' expression ')'
     ;
 ```
