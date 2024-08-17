@@ -116,28 +116,33 @@ pub const Chunk = struct {
         return self.constants.get(index).?;
     }
 
-    pub fn debug(self: *Chunk) void {
-        for (self.constants.items, 0..) |constant, index| {
-            std.debug.print("{x:0>6}: {}\n", .{ index, constant });
+    pub fn debugInstruction(self: *Chunk, address: usize) usize {
+        const instruction = self.getInstruction(address);
+        switch (instruction.opcode) {
+            .CONST => {
+                const value = self.getConstant(instruction.index);
+                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ " {d}    ({} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
+                    address,
+                    @as(u8, @intFromEnum(instruction.opcode)),
+                    instruction.index,
+                    instruction.opcode,
+                    instruction.index,
+                    value.tag,
+                    value,
+                });
+            },
+            else => {
+                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2}           " ++ Ansi.Reset ++ Ansi.Bold ++ "{}\n" ++ Ansi.Reset, .{ address, self.bytecode.get(address).?, instruction.opcode });
+            },
         }
+        return instruction.next;
+    }
+
+    pub fn debug(self: *Chunk) void {
         const bytes = self.bytecode.count();
         var i: usize = 0;
-        while (i < bytes) : (i += 1) {
-            const byte = self.bytecode.get(i).?;
-            switch (@as(OpCode, @enumFromInt(byte))) {
-                .CONST => {
-                    const high: usize = self.bytecode.get(i + 1).?;
-                    const mid: usize = self.bytecode.get(i + 1).?;
-                    const low: usize = self.bytecode.get(i + 1).?;
-                    const index: usize = high << 16 | mid << 8 | low;
-                    const value = self.constants.get(index).?;
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  ({}: {})\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value.tag, value });
-                    i += 3;
-                },
-                else => {
-                    std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}          " ++ Ansi.Reset ++ " {}\n", .{ i, byte, @as(OpCode, @enumFromInt(byte)) });
-                },
-            }
+        while (i < bytes) {
+            i = self.debugInstruction(i);
         }
     }
 

@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const Ansi = @import("ansi.zig");
 const Node = @import("node.zig").Node;
 const Array = @import("array.zig").Array;
 const Chunk = @import("chunk.zig").Chunk;
@@ -115,12 +116,12 @@ pub const Vm = struct {
     }
 
     pub fn debugStack(self: *Vm) void {
-        std.debug.print("Stack | ", .{});
+        std.debug.print("Stack: ", .{});
         for (self.stack.items, 0..) |item, i| {
             if (i != 0) {
                 std.debug.print(", ", .{});
             }
-            std.debug.print("{}", .{item});
+            std.debug.print(Ansi.Cyan ++ "{}" ++ Ansi.Reset, .{item});
         }
         std.debug.print(" <- TOP\n", .{});
     }
