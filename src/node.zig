@@ -127,7 +127,7 @@ pub const Node = struct {
     }
 
     fn debugInternal(self: *Node, prefix: *String, source: []const u8, isLast: bool) !void {
-        std.debug.print(Ansi.Dim ++ "{s}", .{prefix.items});
+        std.debug.print(Ansi.Dim ++ "{s}", .{prefix.buffer});
         var _prefix = try prefix.clone();
         defer _prefix.deinit();
         if (!isLast) {
@@ -145,14 +145,14 @@ pub const Node = struct {
             .Program => {
                 std.debug.print("Program\n", .{});
                 for (self.as.program.statements.items, 0..) |statement, index| {
-                    const isLastStatement = index == self.as.program.statements.items.len - 1;
+                    const isLastStatement = index == self.as.program.statements.count() - 1;
                     try statement.debugInternal(&_prefix, source, isLastStatement);
                 }
             },
             .Block => {
                 std.debug.print("Block\n", .{});
                 for (self.as.block.statements.items, 0..) |statement, index| {
-                    const isLastStatement = index == self.as.block.statements.items.len - 1;
+                    const isLastStatement = index == self.as.block.statements.count() - 1;
                     try statement.debugInternal(&_prefix, source, isLastStatement);
                 }
             },

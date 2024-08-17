@@ -1,7 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const ArrayList = @import("std").ArrayList;
 const Object = @import("object.zig").Object;
 const String = @import("string.zig").String;
 const Vm = @import("vm.zig").Vm;

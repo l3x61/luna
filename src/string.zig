@@ -4,7 +4,7 @@ const Allocator = std.mem.Allocator;
 const utils = @import("utils.zig");
 
 pub const String = struct {
-    items: []u8,
+    buffer: []u8,
     capacity: usize,
     allocator: Allocator,
 
@@ -14,7 +14,7 @@ pub const String = struct {
 
     pub fn init(allocator: Allocator) String {
         return String{
-            .items = &.{},
+            .buffer = &.{},
             .capacity = 0,
             .allocator = allocator,
         };
@@ -28,7 +28,7 @@ pub const String = struct {
 
     pub fn initString(allocator: Allocator, other: String) !String {
         var string = String.init(allocator);
-        try string.append(other.items);
+        try string.append(other.buffer);
         return string;
     }
 
@@ -40,8 +40,8 @@ pub const String = struct {
 
     pub fn deinit(self: *String) void {
         if (self.capacity != 0) {
-            self.allocator.free(self.items.ptr[0..self.capacity]);
-            self.items = &.{};
+            self.allocator.free(self.buffer.ptr[0..self.capacity]);
+            self.buffer = &.{};
             self.capacity = 0;
         }
     }
@@ -50,27 +50,27 @@ pub const String = struct {
         var new = self.allocator.alloc(u8, self.capacity) catch {
             return Error.OutOfMemory;
         };
-        new.len = self.items.len;
-        @memcpy(new, self.items);
+        new.len = self.buffer.len;
+        @memcpy(new, self.buffer);
         return String{
-            .items = new,
+            .buffer = new,
             .capacity = self.capacity,
             .allocator = self.allocator,
         };
     }
 
     pub fn appendLiteral(self: *String, slice: []const u8) Error!void {
-        while (self.capacity < self.items.len + slice.len) {
-            try self.setCapacity(utils.nextPowerOf2(self.items.len + slice.len));
+        while (self.capacity < self.buffer.len + slice.len) {
+            try self.setCapacity(utils.nextPowerOf2(self.buffer.len + slice.len));
         }
         for (slice) |c| {
-            self.items.ptr[self.items.len] = c;
-            self.items.len += 1;
+            self.buffer.ptr[self.buffer.len] = c;
+            self.buffer.len += 1;
         }
     }
 
     pub fn appendString(self: *String, other: String) Error!void {
-        try self.appendLiteral(other.items);
+        try self.appendLiteral(other.buffer);
     }
 
     pub fn appendPrint(self: *String, comptime fmt: []const u8, args: anytype) Error!void {
@@ -82,22 +82,22 @@ pub const String = struct {
     }
 
     pub fn equal(this: String, that: String) bool {
-        return std.mem.eql(u8, this.items, that.items);
+        return std.mem.eql(u8, this.buffer, that.buffer);
     }
 
     pub fn format(self: String, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
         _ = options;
-        try writer.print("{s}", .{self.items});
+        try writer.print("{s}", .{self.buffer});
     }
 
     fn setCapacity(self: *String, new_capacity: usize) Error!void {
-        const old_length = self.items.len;
-        self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
+        const old_length = self.buffer.len;
+        self.buffer = self.allocator.realloc(self.buffer.ptr[0..self.capacity], new_capacity) catch {
             return Error.OutOfMemory;
         };
         self.capacity = new_capacity;
-        self.items.len = old_length;
+        self.buffer.len = old_length;
     }
 };
 
@@ -116,7 +116,7 @@ test "string: push" {
     _ = try string.append(" ");
     _ = try string.append("World\n");
 
-    std.debug.print("{s}", .{string.items});
+    std.debug.print("{s}", .{string.buffer});
 }
 
 test "string: print" {
@@ -126,5 +126,5 @@ test "string: print" {
 
     _ = try string.print("Hello, {s} {d}!", .{ "World", 3.1415 });
 
-    std.debug.print("{s}", .{string.items});
+    std.debug.print("{s}", .{string.buffer});
 }

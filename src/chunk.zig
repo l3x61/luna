@@ -68,12 +68,12 @@ pub const Chunk = struct {
 
     fn pushConstant(self: *Chunk, value: *Value) !void {
         var index: usize = undefined;
-        if (self.constants.find(value.*, Value.equal)) |found| {
-            value.deinit(); // TODO: is deinit'ed just after creation, ...maybe find a better way to find duplicates without allocating
+        if (self.constants.searchLinear(value.*, Value.equal)) |found| {
+            value.deinit();
             index = found;
         } else {
             try self.constants.push(value.*);
-            index = self.constants.items.len - 1;
+            index = self.constants.count() - 1;
         }
         if (index > std.math.maxInt(u24)) {
             return Error.ConstantPoolOverflow;
@@ -85,19 +85,19 @@ pub const Chunk = struct {
     }
 
     pub fn getInstruction(self: *Chunk, index: usize) Instruction {
-        if (index >= self.bytecode.items.len) {
+        if (index >= self.bytecode.count()) {
             return Instruction{
                 .opcode = .HALT,
                 .index = 0,
                 .next = index,
             };
         }
-        const opcode = @as(OpCode, @enumFromInt(self.bytecode.items[index]));
+        const opcode = @as(OpCode, @enumFromInt(self.bytecode.get(index).?));
         switch (opcode) {
             .CONST => {
-                const high: u24 = @as(u24, self.bytecode.items[index + 1]) << 16;
-                const mid: u24 = @as(u24, self.bytecode.items[index + 2]) << 8;
-                const low: u24 = self.bytecode.items[index + 3];
+                const high: u24 = @as(u24, self.bytecode.get(index + 1).?) << 16;
+                const mid: u24 = @as(u24, self.bytecode.get(index + 2).?) << 8;
+                const low: u24 = self.bytecode.get(index + 3).?;
                 return Instruction{
                     .opcode = opcode,
                     .index = high | mid | low,
@@ -113,24 +113,24 @@ pub const Chunk = struct {
     }
 
     pub fn getConstant(self: *Chunk, index: usize) Value {
-        return self.constants.items[index];
+        return self.constants.get(index).?;
     }
 
     pub fn debug(self: *Chunk) void {
         for (self.constants.items, 0..) |constant, index| {
             std.debug.print("{x:0>6}: {}\n", .{ index, constant });
         }
-        const bytes = self.bytecode.items.len;
+        const bytes = self.bytecode.count();
         var i: usize = 0;
         while (i < bytes) : (i += 1) {
-            const byte = self.bytecode.items[i];
+            const byte = self.bytecode.get(i).?;
             switch (@as(OpCode, @enumFromInt(byte))) {
                 .CONST => {
-                    const high: usize = self.bytecode.items[i + 1];
-                    const mid: usize = self.bytecode.items[i + 2];
-                    const low: usize = self.bytecode.items[i + 3];
+                    const high: usize = self.bytecode.get(i + 1).?;
+                    const mid: usize = self.bytecode.get(i + 1).?;
+                    const low: usize = self.bytecode.get(i + 1).?;
                     const index: usize = high << 16 | mid << 8 | low;
-                    const value = self.constants.items[index];
+                    const value = self.constants.get(index).?;
                     std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>2} {x:0>2} {x:0>2} " ++ Ansi.Reset ++ " {} {d}  ({}: {})\n", .{ i, byte, high, mid, low, @as(OpCode, @enumFromInt(byte)), index, value.tag, value });
                     i += 3;
                 },

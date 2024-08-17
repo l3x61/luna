@@ -106,7 +106,7 @@ pub const Vm = struct {
                     defer string.deinit();
                     try string.appendString(left);
                     try string.appendString(right);
-                    const object = try Object.initString(self.allocator, string.items);
+                    const object = try Object.initString(self.allocator, string.buffer);
                     try self.stackPush(try Value.initObject(self.trackObject(object)));
                 },
                 .HALT => return,
@@ -114,11 +114,14 @@ pub const Vm = struct {
         }
     }
 
-    pub fn printTop(self: *Vm) void {
-        const top = self.stackPop() catch {
-            std.debug.print("TOP: stack empty\n", .{});
-            return;
-        };
-        std.debug.print("TOP: {}\n", .{top});
+    pub fn debugStack(self: *Vm) void {
+        std.debug.print("Stack | ", .{});
+        for (self.stack.items, 0..) |item, i| {
+            if (i != 0) {
+                std.debug.print(", ", .{});
+            }
+            std.debug.print("{}", .{item});
+        }
+        std.debug.print(" <- TOP\n", .{});
     }
 };

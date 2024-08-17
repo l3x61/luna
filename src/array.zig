@@ -26,91 +26,74 @@ pub fn Array(comptime Type: type) type {
 
         pub fn initCapacity(allocator: Allocator, capacity: usize) Error!Self {
             var self = Self.init(allocator);
-            const new_capacity = utils.nextPowerOf2(capacity);
-            self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
-                return Error.OutOfMemory;
-            };
+            const new_capacity = if (utils.isPowerOf2(capacity)) capacity else utils.nextPowerOf2(capacity);
+            self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch return Error.OutOfMemory;
             self.items.len = 0;
             self.capacity = new_capacity;
             return self;
         }
 
         pub fn deinit(self: *Self) void {
-            if (self.capacity != 0) {
-                self.allocator.free(self.items.ptr[0..self.capacity]);
-                self.items = &.{};
-                self.capacity = 0;
-            }
+            if (self.capacity == 0) return;
+            self.allocator.free(self.items.ptr[0..self.capacity]);
+            self.items = &.{};
+            self.capacity = 0;
         }
 
         pub fn push(self: *Self, item: Type) Error!void {
-            if (self.items.len + 1 >= self.capacity) {
-                try self.doubleCapacity();
-            }
+            if (self.items.len + 1 >= self.capacity) try self.doubleCapacity();
             self.items.ptr[self.items.len] = item;
             self.items.len += 1;
         }
 
         pub fn peek(self: *Self) ?Type {
-            if (self.items.len != 0) {
-                return self.items.ptr[self.items.len - 1];
-            }
+            if (self.items.len != 0) return self.items.ptr[self.items.len - 1];
             return null;
         }
 
         pub fn pop(self: *Self) ?Type {
-            if (self.items.len != 0) {
-                self.items.len -= 1;
-                return self.items.ptr[self.items.len];
-            }
-            return null;
+            if (self.items.len == 0) return null;
+            self.items.len -= 1;
+            return self.items.ptr[self.items.len];
+        }
+
+        pub fn get(self: *const Self, index: usize) ?Type {
+            if (index >= self.items.len) return null;
+            return self.items.ptr[index];
+        }
+
+        pub fn set(self: *Self, item: Type, index: usize) Error!void {
+            if (index >= self.items.len) return Error.OutOfBounds;
+            self.items.ptr[index] = item;
         }
 
         pub fn insert(self: *Self, item: Type, index: usize) Error!void {
-            if (index > self.items.len) {
-                return Error.OutOfBounds;
-            }
-            if (self.items.len + 1 >= self.capacity) {
-                try self.doubleCapacity();
-            }
-            for (self.items, self.items.len..index) |current, i| {
-                self.items.ptr[i + 1] = current;
-            }
+            if (index > self.items.len) return Error.OutOfBounds;
+            if (self.items.len + 1 >= self.capacity) try self.doubleCapacity();
+            for (self.items, self.items.len..index) |current, i| self.items.ptr[i + 1] = current;
             self.items.ptr[index] = item;
             self.items.len += 1;
         }
 
         pub fn remove(self: *Self, index: usize) Error!void {
-            if (index >= self.items.len) {
-                return Error.OutOfBounds;
-            }
-            for (index..self.items.len) |i| {
-                self.items.ptr[i] = self.items.ptr[i + 1];
-            }
+            if (index >= self.items.len) return Error.OutOfBounds;
+            for (index..self.items.len) |i| self.items.ptr[i] = self.items.ptr[i + 1];
             self.items.len -= 1;
         }
 
-        pub fn find(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
-            for (self.items, 0..) |current, i| {
-                if (compare(current, item)) {
-                    return i;
-                }
-            }
+        pub fn searchLinear(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
+            for (self.items, 0..) |current, index| if (compare(current, item)) return index;
             return null;
         }
 
         pub fn first(self: *const Self) ?Type {
-            if (self.items.len != 0) {
-                return self.items[0];
-            }
-            return null;
+            if (self.items.len == 0) return null;
+            return self.items[0];
         }
 
         pub fn last(self: *const Self) ?Type {
-            if (self.items.len != 0) {
-                return self.items[self.items.len - 1];
-            }
-            return null;
+            if (self.items.len == 0) return null;
+            return self.items[self.items.len - 1];
         }
 
         pub fn count(self: *const Self) usize {

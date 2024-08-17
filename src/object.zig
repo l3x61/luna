@@ -36,7 +36,7 @@ pub const Object = struct {
 
     pub fn clone(self: *Object) !*Object {
         switch (self.tag) {
-            .String => return initString(self.allocator, self.as.string.items),
+            .String => return initString(self.allocator, self.as.string.buffer),
         }
     }
 
@@ -48,7 +48,7 @@ pub const Object = struct {
 
     pub fn toNumber(self: *Object) !f64 {
         switch (self.tag) {
-            .String => return try std.fmt.parseFloat(f64, self.as.string.items),
+            .String => return try std.fmt.parseFloat(f64, self.as.string.buffer),
         }
     }
 
@@ -78,7 +78,7 @@ pub const Object = struct {
         _ = fmt;
         _ = options;
         switch (self.tag) {
-            .String => try writer.print("{s}", .{self.as.string.items}),
+            .String => try writer.print("{s}", .{self.as.string.buffer}),
         }
     }
 };

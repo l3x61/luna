@@ -54,7 +54,7 @@ pub const Luna = struct {
             defer vm.deinit();
             try vm.run();
             const elapsed = @as(f64, @floatFromInt(timer.read()));
-            vm.printTop();
+            vm.debugStack();
             try stdout.print("Elapsed: {d}ms\n", .{elapsed / std.time.ns_per_ms});
         }
     }

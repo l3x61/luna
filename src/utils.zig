@@ -1,8 +1,12 @@
 const std = @import("std");
 
-pub fn nextPowerOf2(n: usize) usize {
+pub fn isPowerOf2(u: usize) bool {
+    return u != 0 and (u & (u - 1)) == 0;
+}
+
+pub fn nextPowerOf2(u: usize) usize {
     comptime std.debug.assert(@sizeOf(usize) == 8);
-    var result: usize = n;
+    var result: usize = u;
     result |= result >> 1;
     result |= result >> 2;
     result |= result >> 4;

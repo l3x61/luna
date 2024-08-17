@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const Array = @import("array.zig").Array;
-const utils = @import("utils.zig");
+const Utils = @import("utils.zig");
 
 pub fn Table(comptime Key: type, comptime Value: type) type {
     return struct {
