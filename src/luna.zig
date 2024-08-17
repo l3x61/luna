@@ -9,18 +9,25 @@ const Parser = @import("parser.zig").Parser;
 const Value = @import("value.zig").Value;
 const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
+const Globals = @import("globals.zig").Globals;
 
 pub const Luna = struct {
     allocator: Allocator,
+    globals: Globals,
 
     pub fn init(allocator: Allocator) Luna {
         return Luna{
             .allocator = allocator,
+            .globals = Globals.init(allocator),
         };
     }
 
-    pub fn deinit(self: Luna) void {
-        _ = self.allocator;
+    pub fn deinit(self: *Luna) void {
+        for (self.globals.entries.items) |*entry| {
+            entry.key.deinit();
+            entry.value.deinit();
+        }
+        self.globals.deinit();
     }
 
     pub fn repl(self: *Luna) !void {
@@ -31,17 +38,11 @@ pub const Luna = struct {
             try stdout.print("> ", .{});
             var buffer: [1024]u8 = undefined;
             const line = try stdin.readUntilDelimiter(&buffer, '\n');
-            if (line.len == 0) {
-                continue :loop;
-            }
-            if (std.mem.eql(u8, line, "exit")) {
-                break :loop;
-            }
+            if (line.len == 0) continue :loop;
+            if (std.mem.eql(u8, line, "exit")) break :loop;
             var timer = try std.time.Timer.start();
             var parser = Parser.init(self.allocator, line);
-            var ast = parser.parse() catch {
-                continue :loop;
-            };
+            var ast = parser.parse() catch continue :loop;
             defer ast.free(self.allocator);
             try ast.debug(self.allocator, line);
 
@@ -50,7 +51,7 @@ pub const Luna = struct {
             try chunk.compile(ast, line);
             chunk.debug();
 
-            var vm = try Vm.init(self.allocator, chunk);
+            var vm = try Vm.init(self.allocator, chunk, &self.globals);
             defer vm.deinit();
             try vm.run();
             const elapsed = @as(f64, @floatFromInt(timer.read()));

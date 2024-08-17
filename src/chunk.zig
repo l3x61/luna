@@ -19,6 +19,8 @@ pub const OpCode = enum(u8) {
     NEG,
     CAT,
     HALT,
+    SETG,
+    GETG,
 
     pub fn format(self: OpCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
@@ -141,16 +143,14 @@ pub const Chunk = struct {
     pub fn debug(self: *Chunk) void {
         const bytes = self.bytecode.count();
         var i: usize = 0;
-        while (i < bytes) {
-            i = self.debugInstruction(i);
-        }
+        while (i < bytes) i = self.debugInstruction(i);
     }
 
     pub fn compile(self: *Chunk, root: *Node, source: []const u8) !void {
         switch (root.tag) {
             .Program => {
                 const node = root.as.program;
-                const last = node.statements.last() orelse return;
+                const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
                     try self.compile(statement, source);
                     if (statement != last) {
@@ -161,7 +161,7 @@ pub const Chunk = struct {
             },
             .Block => {
                 const node = root.as.block;
-                const last = node.statements.last() orelse {
+                const last = node.statements.peek() orelse {
                     var value = Value.init();
                     try self.pushConstant(&value);
                     return;
@@ -175,6 +175,14 @@ pub const Chunk = struct {
             },
             .Binary => {
                 const node = root.as.binary;
+                if (node.operator.tag == .Equal) {
+                    try self.compile(node.right, source);
+                    const identifier = node.left.as.primary.operand.lexeme(source);
+                    var value = try Value.initObjectStringLiteral(self.allocator, identifier);
+                    try self.pushConstant(&value);
+                    try self.pushOpCode(.SETG);
+                    return;
+                }
                 try self.compile(node.left, source);
                 try self.compile(node.right, source);
                 switch (node.operator.tag) {
@@ -201,11 +209,24 @@ pub const Chunk = struct {
                 const node = root.as.primary;
                 var value: Value = undefined;
                 switch (node.operand.tag) {
-                    .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    .String => value = try Value.initObject(try Object.initStringLiteral(self.allocator, node.operand.stringValue(source))),
-                    else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
+                    .Number => {
+                        const number = try std.fmt.parseFloat(f64, node.operand.lexeme(source));
+                        value = Value.initNumber(number);
+                    },
+                    .String => {
+                        const string = node.operand.stringValue(source);
+                        value = try Value.initObjectStringLiteral(self.allocator, string);
+                    },
+                    .Identifier => {
+                        const identifier = node.operand.lexeme(source);
+                        value = try Value.initObjectStringLiteral(self.allocator, identifier);
+                    },
+                    else => {
+                        std.debug.panic("{} not defined for primary node", .{node.operand.tag});
+                    },
                 }
                 try self.pushConstant(&value);
+                if (node.operand.tag == .Identifier) try self.pushOpCode(.GETG);
             },
         }
     }

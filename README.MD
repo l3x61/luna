@@ -1,6 +1,10 @@
 # Luna
 An experimental scripting language written in Zig.
 
+## Demo
+Expression scanning, parsing, compiling and evaluating.
+![Screenshot](assets/screenshot.png)
+
 ## Operators & Percedence
 | Operators | Associativity | Description |
 |-----------|---------------|-------------|
@@ -46,7 +50,11 @@ block
     ;
 
 expression
-    : concatenative
+    : assignment
+    ;
+
+assignment
+    : IDENTIFIER '=' expression
     ;
 
 concatenative

@@ -46,7 +46,7 @@ pub fn Array(comptime Type: type) type {
             self.items.len += 1;
         }
 
-        pub fn peek(self: *Self) ?Type {
+        pub fn peek(self: *const Self) ?Type {
             if (self.items.len != 0) return self.items.ptr[self.items.len - 1];
             return null;
         }
@@ -84,16 +84,6 @@ pub fn Array(comptime Type: type) type {
         pub fn searchLinear(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
             for (self.items, 0..) |current, index| if (compare(current, item)) return index;
             return null;
-        }
-
-        pub fn first(self: *const Self) ?Type {
-            if (self.items.len == 0) return null;
-            return self.items[0];
-        }
-
-        pub fn last(self: *const Self) ?Type {
-            if (self.items.len == 0) return null;
-            return self.items[self.items.len - 1];
         }
 
         pub fn count(self: *const Self) usize {

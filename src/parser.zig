@@ -53,7 +53,20 @@ pub const Parser = struct {
     }
 
     fn parseExpression(self: *Parser) !*Node {
-        return try self.parseConcatenativeExpression();
+        return try self.parseAssignmentExpression();
+    }
+
+    fn parseAssignmentExpression(self: *Parser) !*Node {
+        var node = try self.parseConcatenativeExpression();
+        errdefer node.free(self.allocator);
+        if (self.token.matchTag(.Equal)) {
+            const left = node;
+            const operator = try self.eatTag(.Equal);
+            const right = try self.parseAssignmentExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, left, operator, right);
+        }
+        return node;
     }
 
     fn parseConcatenativeExpression(self: *Parser) !*Node {

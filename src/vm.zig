@@ -10,6 +10,7 @@ const Instruction = @import("chunk.zig").Instruction;
 const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 const String = @import("string.zig").String;
+const Globals = @import("globals.zig").Globals;
 
 pub const Vm = struct {
     allocator: Allocator,
@@ -17,17 +18,19 @@ pub const Vm = struct {
     chunk: Chunk,
     ip: usize,
     root: ?*Object = null,
+    globals: *Globals,
 
     const Errror = error{
         StackUnderflow,
     };
 
-    pub fn init(allocator: Allocator, chunk: Chunk) !Vm {
+    pub fn init(allocator: Allocator, chunk: Chunk, globals: *Globals) !Vm {
         return Vm{
             .allocator = allocator,
             .stack = try Array(Value).initCapacity(allocator, 1024),
             .chunk = chunk,
             .ip = 0,
+            .globals = globals,
         };
     }
 
@@ -49,6 +52,10 @@ pub const Vm = struct {
 
     fn stackPush(self: *Vm, value: Value) !void {
         try self.stack.push(value);
+    }
+
+    fn stackPeek(self: *Vm) !Value {
+        return self.stack.peek() orelse Errror.StackUnderflow;
     }
 
     fn stackPop(self: *Vm) !Value {
@@ -109,6 +116,17 @@ pub const Vm = struct {
                     self.trackValue(value);
                     try self.stackPush(value);
                 },
+                .SETG => {
+                    var key = try (try self.stackPop()).clone();
+                    const value = try (try self.stackPeek()).clone();
+                    try self.globals.set(&key, value);
+                },
+                .GETG => {
+                    var key = try (try self.stackPop()).clone();
+                    defer key.deinit();
+                    const entry = self.globals.get(key);
+                    try self.stackPush(if (entry) |e| e.value else Value.init());
+                },
                 .HALT => return,
             }
         }
@@ -122,6 +140,6 @@ pub const Vm = struct {
             }
             std.debug.print(Ansi.Cyan ++ "{}" ++ Ansi.Reset, .{item});
         }
-        std.debug.print(" <- TOP\n", .{});
+        std.debug.print("{s}", .{if (self.stack.count() == 0) "> EMPTY <\n" else " <- TOP\n"});
     }
 };
