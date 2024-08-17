@@ -202,7 +202,7 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .Number => value = Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme(source))),
-                    .String => value = try Value.initObject(try Object.initString(self.allocator, node.operand.stringValue(source))),
+                    .String => value = try Value.initObject(try Object.initStringLiteral(self.allocator, node.operand.stringValue(source))),
                     else => std.debug.panic("{} not defined for primary node", .{node.operand.tag}),
                 }
                 try self.pushConstant(&value);

@@ -56,6 +56,10 @@ pub const Value = struct {
         return Value{ .tag = Tag.Object, .as = Union{ .object = value } };
     }
 
+    pub fn initObjectString(allocator: Allocator, string: String) !Value {
+        return Value{ .tag = Tag.Object, .as = Union{ .object = try Object.initString(allocator, string) } };
+    }
+
     pub fn clone(self: Value) !Value {
         switch (self.tag) {
             .Null => return self,

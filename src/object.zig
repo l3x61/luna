@@ -24,11 +24,21 @@ pub const Object = struct {
         string: String,
     };
 
-    pub fn initString(allocator: Allocator, value: []const u8) !*Object {
+    pub fn initString(allocator: Allocator, string: String) !*Object {
         const object = try allocator.create(Object);
         object.* = Object{
             .tag = Tag.String,
-            .as = Union{ .string = try String.initLiteral(allocator, value) },
+            .as = Union{ .string = string },
+            .allocator = allocator,
+        };
+        return object;
+    }
+
+    pub fn initStringLiteral(allocator: Allocator, literal: []const u8) !*Object {
+        const object = try allocator.create(Object);
+        object.* = Object{
+            .tag = Tag.String,
+            .as = Union{ .string = try String.initLiteral(allocator, literal) },
             .allocator = allocator,
         };
         return object;
@@ -36,7 +46,7 @@ pub const Object = struct {
 
     pub fn clone(self: *Object) !*Object {
         switch (self.tag) {
-            .String => return initString(self.allocator, self.as.string.buffer),
+            .String => return initStringLiteral(self.allocator, self.as.string.buffer),
         }
     }
 

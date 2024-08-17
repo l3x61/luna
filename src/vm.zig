@@ -47,11 +47,6 @@ pub const Vm = struct {
         }
     }
 
-    fn trackObject(self: *Vm, object: *Object) void {
-        object.next = self.root;
-        self.root = object;
-    }
-
     fn stackPush(self: *Vm, value: Value) !void {
         try self.stack.push(value);
     }
@@ -108,13 +103,11 @@ pub const Vm = struct {
                     defer right.deinit();
 
                     var left = try (try self.stackPop()).toString(self.allocator);
-                    defer left.deinit();
-
                     try left.appendString(right);
-                    const object = try Object.initString(self.allocator, left.buffer);
-                    self.trackObject(object);
 
-                    try self.stackPush(try Value.initObject(object));
+                    const value = try Value.initObjectString(self.allocator, left);
+                    self.trackValue(value);
+                    try self.stackPush(value);
                 },
                 .HALT => return,
             }
