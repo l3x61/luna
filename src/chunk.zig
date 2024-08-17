@@ -68,7 +68,7 @@ pub const Chunk = struct {
 
     fn pushConstant(self: *Chunk, value: *Value) !void {
         var index: usize = undefined;
-        if (self.constants.searchLinear(value.*, Value.equal)) |found| {
+        if (self.constants.searchLinear(value.*, Value.compare)) |found| {
             value.deinit();
             index = found;
         } else {

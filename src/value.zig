@@ -92,7 +92,7 @@ pub const Value = struct {
         }
     }
 
-    pub fn equal(left: Value, right: Value) bool {
+    pub fn compare(left: Value, right: Value) bool {
         if (left.tag != right.tag) {
             return false;
         }
@@ -100,7 +100,7 @@ pub const Value = struct {
             .Null => return true,
             .Boolean => return left.as.boolean == right.as.boolean,
             .Number => return left.as.number == right.as.number,
-            .Object => return Object.equal(left.as.object, right.as.object),
+            .Object => return Object.compare(left.as.object, right.as.object),
         }
     }
 

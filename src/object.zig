@@ -65,12 +65,12 @@ pub const Object = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn equal(left: *Object, right: *Object) bool {
+    pub fn compare(left: *Object, right: *Object) bool {
         if (left.tag != right.tag) {
             return false;
         }
         switch (left.tag) {
-            .String => return String.equal(left.as.string, right.as.string),
+            .String => return String.compare(left.as.string, right.as.string),
         }
     }
 

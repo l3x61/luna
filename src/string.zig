@@ -81,7 +81,7 @@ pub const String = struct {
         try self.appendLiteral(list.items);
     }
 
-    pub fn equal(this: String, that: String) bool {
+    pub fn compare(this: String, that: String) bool {
         return std.mem.eql(u8, this.buffer, that.buffer);
     }
 
