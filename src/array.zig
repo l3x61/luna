@@ -30,6 +30,7 @@ pub fn Array(comptime Type: type) type {
             self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
                 return Error.OutOfMemory;
             };
+            self.items.len = 0;
             self.capacity = new_capacity;
             return self;
         }
