@@ -121,9 +121,9 @@ pub const Parser = struct {
     fn parseUnaryExpression(self: *Parser) !*Node {
         if (self.token.matchTags(UnaryTokenTags)) {
             const operator = try self.eatTags(UnaryTokenTags);
-            const operand = try self.parseUnaryExpression();
+            const operand = try self.parsePrimaryExpression();
             errdefer operand.free(self.allocator);
-            return try Node.initUnaryNode(self.allocator, operator, operand);
+            return Node.initUnaryNode(self.allocator, operator, operand);
         } else {
             return self.parsePrimaryExpression();
         }

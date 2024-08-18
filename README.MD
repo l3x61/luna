@@ -32,7 +32,7 @@ STRING
     | '\'' ~'\''* '\''
     ;
 
-IDENIFIER
+IDENTIFIER
     : [a-zA-Z_][a-zA-Z_0-9]*
     ;
 
@@ -41,8 +41,8 @@ program
     ;
 
 statement
-    : block
-    | expression
+    : expression
+    | block
     ;
 
 block
@@ -54,28 +54,35 @@ expression
     ;
 
 assignment
-    : IDENTIFIER '=' concatenative
+    : concatenative
+    | IDENTIFIER '=' assignment
     ;
 
 concatenative
-    : additive ( '..' additive )*
+    : additive
+    | concatenative '..' additive
     ;
 
 additive
-    : multiplicative ( ( '+' | '-' ) multiplicative )*
+    : multiplicative
+    | additive '+' multiplicative
     ;
 
 multiplicative
-    : unary ( ( '*' | '/' ) unary )*
+    : power
+    | multiplicative ( '*' | '/' ) power
+    ;
+
+power
+    : unary ( '**'  power )*
     ;
 
 unary
-    : ( '-' | '+' ) unary
-    | primary
+    : ( '-' | '+' )? primary
     ;
 
 primary
-    : 'null' | 'true' | 'false' | NUMBER | STRING | IDENTIFIER
+    : ( 'null' | 'true' | 'false' | NUMBER | STRING | IDENTIFIER )
     | '(' expression ')'
     ;
 ```
