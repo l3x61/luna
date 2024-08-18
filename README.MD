@@ -9,7 +9,7 @@ Expression scanning, parsing, compiling and evaluating.
 | Operators         | Associativity | Description |
 |-------------------|---------------|-------------|
 | `()`              |               | Grouping |
-| `!` `-` `+`       | Right         | Unary |
+| `!` `-` `+`       |               | Unary |
 | `**`              | Right         | Power |
 | `*` `/`           | Left          | Multiplicative |
 | `+` `-`           | Left          | Additive |
@@ -17,7 +17,7 @@ Expression scanning, parsing, compiling and evaluating.
 | `<` `<=` `>` `>=` | Left          | Relational |
 | `==` `!=`         | Left          | Equality |
 | `&&`              | Left          | Logical AND |
-| `\|\|`              | Left          | Logical OR |
+| `\|\|`            | Left          | Logical OR |
 | `=`               | Right         | Assignment |
 
 
