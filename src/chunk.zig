@@ -162,7 +162,7 @@ pub const Chunk = struct {
             .Block => {
                 const node = root.as.block;
                 const last = node.statements.peek() orelse {
-                    var value = Value.init();
+                    var value = Value.initNull();
                     try self.pushConstant(&value);
                     return;
                 };
@@ -210,7 +210,7 @@ pub const Chunk = struct {
                 var value: Value = undefined;
                 switch (node.operand.tag) {
                     .KeywordNull => {
-                        value = Value.init();
+                        value = Value.initNull();
                     },
                     .KeywordTrue => {
                         value = Value.initBoolean(true);

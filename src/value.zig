@@ -33,15 +33,8 @@ pub const Value = struct {
         DivisionBy0,
     };
 
-    pub fn init() Value {
+    pub fn initNull() Value {
         return Value{ .tag = Tag.Null, .as = Union{ .null = {} } };
-    }
-
-    pub fn deinit(self: *Value) void {
-        switch (self.tag) {
-            .Object => self.as.object.deinit(),
-            else => {},
-        }
     }
 
     pub fn initBoolean(value: bool) Value {
@@ -62,6 +55,13 @@ pub const Value = struct {
 
     pub fn initObjectStringLiteral(allocator: Allocator, literal: []const u8) !Value {
         return Value{ .tag = Tag.Object, .as = Union{ .object = try Object.initStringLiteral(allocator, literal) } };
+    }
+
+    pub fn deinit(self: *Value) void {
+        switch (self.tag) {
+            .Object => self.as.object.deinit(),
+            else => {},
+        }
     }
 
     pub fn clone(self: Value) !Value {

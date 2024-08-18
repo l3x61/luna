@@ -44,6 +44,13 @@ pub const Object = struct {
         return object;
     }
 
+    pub fn deinit(self: *Object) void {
+        switch (self.tag) {
+            .String => self.as.string.deinit(),
+        }
+        self.allocator.destroy(self);
+    }
+
     pub fn clone(self: *Object) !*Object {
         switch (self.tag) {
             .String => return initStringLiteral(self.allocator, self.as.string.buffer),
@@ -67,14 +74,6 @@ pub const Object = struct {
             .String => return self.as.string.clone(),
         }
     }
-
-    pub fn deinit(self: *Object) void {
-        switch (self.tag) {
-            .String => self.as.string.deinit(),
-        }
-        self.allocator.destroy(self);
-    }
-
     pub fn compare(left: *Object, right: *Object) bool {
         if (left.tag != right.tag) {
             return false;

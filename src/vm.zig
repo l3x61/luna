@@ -122,10 +122,9 @@ pub const Vm = struct {
                     try self.globals.set(&key, value);
                 },
                 .GETG => {
-                    var key = try (try self.stackPop()).clone();
-                    defer key.deinit();
+                    const key = try self.stackPop();
                     const entry = self.globals.get(key);
-                    try self.stackPush(if (entry) |e| e.value else Value.init());
+                    try self.stackPush(if (entry) |e| e.value else Value.initNull());
                 },
                 .HALT => return,
             }
