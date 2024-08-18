@@ -18,6 +18,15 @@ pub const OpCode = enum(u8) {
     MOD,
     NEG,
     CAT,
+    EQ,
+    NEQ,
+    LT,
+    GT,
+    LTEQ,
+    GTEQ,
+    LOR,
+    LAND,
+    LNOT,
     HALT,
     SETG,
     GETG,
@@ -193,6 +202,14 @@ pub const Chunk = struct {
                     .Slash => try self.pushOpCode(.DIV),
                     .Percent => try self.pushOpCode(.MOD),
                     .DotDot => try self.pushOpCode(.CAT),
+                    .EqualEqual => try self.pushOpCode(.EQ),
+                    .BangEqual => try self.pushOpCode(.NEQ),
+                    .Less => try self.pushOpCode(.LT),
+                    .LessEqual => try self.pushOpCode(.LTEQ),
+                    .Greater => try self.pushOpCode(.GT),
+                    .GreaterEqual => try self.pushOpCode(.GTEQ),
+                    .PipePipe => try self.pushOpCode(.LOR),
+                    .AndAnd => try self.pushOpCode(.LAND),
                     else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag}),
                 }
             },
@@ -200,8 +217,9 @@ pub const Chunk = struct {
                 const node = root.as.unary;
                 try self.compile(node.operand, source);
                 switch (node.operator.tag) {
-                    .Plus => return,
+                    .Bang => try self.pushOpCode(.LNOT),
                     .Minus => try self.pushOpCode(.NEG),
+                    .Plus => return,
                     else => std.debug.panic("{} not defined for unary node", .{node.operator.tag}),
                 }
             },

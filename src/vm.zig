@@ -116,6 +116,50 @@ pub const Vm = struct {
                     self.trackValue(value);
                     try self.stackPush(value);
                 },
+                .EQ => {
+                    const right = try (try self.stackPop()).clone();
+                    const left = try (try self.stackPop()).clone();
+                    try self.stackPush(Value.initBoolean(Value.compare(left, right)));
+                },
+                .NEQ => {
+                    const right = try (try self.stackPop()).clone();
+                    const left = try (try self.stackPop()).clone();
+                    try self.stackPush(Value.initBoolean(!Value.compare(left, right)));
+                },
+                .LT => {
+                    const right = try (try self.stackPop()).toNumber();
+                    const left = try (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initBoolean(left < right));
+                },
+                .LTEQ => {
+                    const right = try (try self.stackPop()).toNumber();
+                    const left = try (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initBoolean(left <= right));
+                },
+                .GT => {
+                    const right = try (try self.stackPop()).toNumber();
+                    const left = try (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initBoolean(left > right));
+                },
+                .GTEQ => {
+                    const right = try (try self.stackPop()).toNumber();
+                    const left = try (try self.stackPop()).toNumber();
+                    try self.stackPush(Value.initBoolean(left >= right));
+                },
+                .LNOT => {
+                    const operand = (try self.stackPop()).toBoolean();
+                    try self.stackPush(Value.initBoolean(!operand));
+                },
+                .LOR => {
+                    const right = (try self.stackPop()).toBoolean();
+                    const left = (try self.stackPop()).toBoolean();
+                    try self.stackPush(Value.initBoolean(left or right));
+                },
+                .LAND => {
+                    const right = (try self.stackPop()).toBoolean();
+                    const left = (try self.stackPop()).toBoolean();
+                    try self.stackPush(Value.initBoolean(left and right));
+                },
                 .SETG => {
                     var key = try (try self.stackPop()).clone();
                     const value = try (try self.stackPeek()).clone();

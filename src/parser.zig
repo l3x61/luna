@@ -57,7 +57,7 @@ pub const Parser = struct {
     }
 
     fn parseAssignmentExpression(self: *Parser) !*Node {
-        var node = try self.parseConcatenativeExpression();
+        var node = try self.parseLogicalOrExpression();
         errdefer node.free(self.allocator);
         if (self.token.matchTag(.Equal)) {
             const left = node;
@@ -65,6 +65,54 @@ pub const Parser = struct {
             const right = try self.parseAssignmentExpression();
             errdefer right.free(self.allocator);
             node = try Node.initBinaryNode(self.allocator, left, operator, right);
+        }
+        return node;
+    }
+
+    fn parseLogicalOrExpression(self: *Parser) !*Node {
+        var node = try self.parseLogicalAndExpression();
+        errdefer node.free(self.allocator);
+        while (self.token.matchTag(.PipePipe)) {
+            const operator = try self.eatTag(.PipePipe);
+            const right = try self.parseLogicalAndExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, node, operator, right);
+        }
+        return node;
+    }
+
+    fn parseLogicalAndExpression(self: *Parser) !*Node {
+        var node = try self.parseEqualityExpression();
+        errdefer node.free(self.allocator);
+        while (self.token.matchTag(.AndAnd)) {
+            const operator = try self.eatTag(.AndAnd);
+            const right = try self.parseEqualityExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, node, operator, right);
+        }
+        return node;
+    }
+
+    fn parseEqualityExpression(self: *Parser) !*Node {
+        var node = try self.parseRelationalExpression();
+        errdefer node.free(self.allocator);
+        while (self.token.matchTags(EqualityTokenTags)) {
+            const operator = try self.eatTags(EqualityTokenTags);
+            const right = try self.parseRelationalExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, node, operator, right);
+        }
+        return node;
+    }
+
+    fn parseRelationalExpression(self: *Parser) !*Node {
+        var node = try self.parseConcatenativeExpression();
+        errdefer node.free(self.allocator);
+        while (self.token.matchTags(RelationalTokenTags)) {
+            const operator = try self.eatTags(RelationalTokenTags);
+            const right = try self.parseConcatenativeExpression();
+            errdefer right.free(self.allocator);
+            node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
     }
@@ -176,6 +224,18 @@ pub const Parser = struct {
 
     // vvvv TODO: use a LUT ?
 
+    const EqualityTokenTags = &[_]Token.Tag{
+        .EqualEqual,
+        .BangEqual,
+    };
+
+    const RelationalTokenTags = &[_]Token.Tag{
+        .Less,
+        .LessEqual,
+        .Greater,
+        .GreaterEqual,
+    };
+
     const AdditiveTokenTags = &[_]Token.Tag{
         .Plus,
         .Minus,
@@ -188,8 +248,9 @@ pub const Parser = struct {
     };
 
     const UnaryTokenTags = &[_]Token.Tag{
-        .Plus,
+        .Bang,
         .Minus,
+        .Plus,
     };
 
     const PrimaryTokenTags = &[_]Token.Tag{

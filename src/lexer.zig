@@ -91,11 +91,6 @@ pub const Lexer = struct {
             return Token.init(.Percent, self.cursor - 1, 1);
         }
 
-        if (c == '=') {
-            self.advance();
-            return Token.init(.Equal, self.cursor - 1, 1);
-        }
-
         if (c == '.') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '.') {
@@ -103,6 +98,60 @@ pub const Lexer = struct {
                 return Token.init(.DotDot, self.cursor - 2, 2);
             }
             return Token.init(.Dot, self.cursor - 1, 1);
+        }
+
+        if (c == '|') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '|') {
+                self.advance();
+                return Token.init(.PipePipe, self.cursor - 2, 2);
+            }
+            return Token.init(.Pipe, self.cursor - 1, 1);
+        }
+
+        if (c == '&') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '&') {
+                self.advance();
+                return Token.init(.AndAnd, self.cursor - 2, 2);
+            }
+            return Token.init(.And, self.cursor - 1, 1);
+        }
+
+        if (c == '!') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '=') {
+                self.advance();
+                return Token.init(.BangEqual, self.cursor - 2, 2);
+            }
+            return Token.init(.Bang, self.cursor - 1, 1);
+        }
+
+        if (c == '<') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '=') {
+                self.advance();
+                return Token.init(.LessEqual, self.cursor - 2, 2);
+            }
+            return Token.init(.Less, self.cursor - 1, 1);
+        }
+
+        if (c == '>') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '=') {
+                self.advance();
+                return Token.init(.GreaterEqual, self.cursor - 2, 2);
+            }
+            return Token.init(.Greater, self.cursor - 1, 1);
+        }
+
+        if (c == '=') {
+            self.advance();
+            if (!self.isEndOfFile() and self.char() == '=') {
+                self.advance();
+                return Token.init(.EqualEqual, self.cursor - 2, 2);
+            }
+            return Token.init(.Equal, self.cursor - 1, 1);
         }
 
         if (c == '(') {

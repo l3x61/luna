@@ -54,8 +54,28 @@ expression
     ;
 
 assignment
-    : concatenative
+    : logical_or
     | IDENTIFIER '=' assignment
+    ;
+
+logical_or
+    : logical_and
+    | logical_or '||' logical_and
+    ;
+
+logical_and
+    : equality
+    | logical_and '&&' equality
+    ;
+
+equality
+    : relational
+    | equality ( '==' | '!=' ) relational
+    ;
+
+relational
+    : concatenative
+    | relational ( '<' | '<=' | '>' | '>=' ) concatenative
     ;
 
 concatenative
@@ -74,16 +94,16 @@ multiplicative
     ;
 
 power
-    : unary ( '**'  power )*
+    :  unary ( '**'  power )*
     ;
 
 unary
-    : ( '-' | '+' )? primary
+    : ( '!' | '-' | '+' )? primary
     ;
 
 primary
-    : ( 'null' | 'true' | 'false' | NUMBER | STRING | IDENTIFIER )
-    | '(' expression ')'
+    : '(' expression ')'
+    | ( 'null' | 'true' | 'false' | NUMBER | STRING | IDENTIFIER )
     ;
 ```
 

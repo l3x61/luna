@@ -57,7 +57,7 @@ pub const Object = struct {
         }
     }
 
-    pub fn toBoolean(self: *Object) !bool {
+    pub fn toBoolean(self: *Object) bool {
         switch (self.tag) {
             .String => return false,
         }
