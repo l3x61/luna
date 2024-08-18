@@ -56,6 +56,7 @@ pub const Luna = struct {
             try vm.run();
             const elapsed = @as(f64, @floatFromInt(timer.read()));
             vm.debugStack();
+            vm.globals.debug();
             try stdout.print("Took: " ++ Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
         }
     }
