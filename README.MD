@@ -128,3 +128,6 @@ primary
 * [Simple but Powerful Pratt Parsing](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html)
 * [Parsing Expressions by Recursive Descent](https://www.engr.mun.ca/~theo/Misc/exp_parsing.htm)
 * [Notes on the Implementation of Lua 5.3](https://poga.github.io/lua53-notes/introduction.html)
+* [SipHash: a fast short-input PRF (PDF)](https://cr.yp.to/siphash/siphash-20120918.pdf)
+* [SipHash - Linux](https://www.kernel.org/doc/html/latest/security/siphash.html)
+* [SipHash - Wikipedia](https://en.wikipedia.org/wiki/SipHash)
