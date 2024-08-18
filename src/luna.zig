@@ -40,7 +40,6 @@ pub const Luna = struct {
             const line = try stdin.readUntilDelimiter(&buffer, '\n');
             if (line.len == 0) continue :loop;
             if (std.mem.eql(u8, line, "exit")) break :loop;
-            var timer = try std.time.Timer.start();
             var parser = Parser.init(self.allocator, line);
             var ast = parser.parse() catch continue :loop;
             defer ast.free(self.allocator);
@@ -53,6 +52,7 @@ pub const Luna = struct {
 
             var vm = try Vm.init(self.allocator, chunk, &self.globals);
             defer vm.deinit();
+            var timer = try std.time.Timer.start();
             try vm.run();
             const elapsed = @as(f64, @floatFromInt(timer.read()));
             vm.debugStack();
