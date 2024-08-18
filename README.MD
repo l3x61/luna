@@ -54,7 +54,7 @@ expression
     ;
 
 assignment
-    : IDENTIFIER '=' expression
+    : IDENTIFIER '=' concatenative
     ;
 
 concatenative
