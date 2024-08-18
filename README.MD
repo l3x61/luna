@@ -5,15 +5,21 @@ An experimental scripting language written in Zig.
 Expression scanning, parsing, compiling and evaluating.
 ![Screenshot](assets/screenshot.png)
 
-## Operators & Percedence
-| Operators | Associativity | Description |
-|-----------|---------------|-------------|
-| `()`      |               | Grouping |
-| `-` `+`   | Right         | Unary negation and identity |
-| `**`      | Right         | Exponentiation |
-| `*` `/`   | Left          | Multiplication and division |
-| `+` `-`   | Left          | Addition and subtraction |
-| `..`      | Left          | Concatenation |
+## Operators & Precedence
+| Operators         | Associativity | Description |
+|-------------------|---------------|-------------|
+| `()`              |               | Grouping |
+| `!` `-` `+`       | Right         | Unary |
+| `**`              | Right         | Power |
+| `*` `/`           | Left          | Multiplicative |
+| `+` `-`           | Left          | Additive |
+| `..`              | Left          | Concatenation |
+| `<` `<=` `>` `>=` | Left          | Relational |
+| `==` `!=`         | Left          | Equality |
+| `&&`              | Left          | Logical AND |
+| `||`              | Left          | Logical OR |
+| `=`               | Right         | Assignment |
+
 
 ## Grammar
 ```g4
