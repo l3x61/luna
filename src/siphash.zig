@@ -89,7 +89,7 @@ test "sipHash24 test1" {
     var timer = try std.time.Timer.start();
     const result = sipHash24("", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d:.3}ms\n", .{elapsed / std.time.ns_per_ms});
+    std.debug.print("took {d}ns\n", .{elapsed});
     std.debug.assert(result == 0x1e924b9d737700d7);
 }
 
@@ -99,7 +99,7 @@ test "sipHash24 test2" {
     var timer = try std.time.Timer.start();
     const result = sipHash24("helloworld!!!", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d:.3}ms\n", .{elapsed / std.time.ns_per_ms});
+    std.debug.print("took {d}ns\n", .{elapsed});
     std.debug.assert(result == 0x4b8e02f4c284fd68);
 }
 
@@ -109,7 +109,7 @@ test "sipHash24 test3" {
     var timer = try std.time.Timer.start();
     const result = sipHash24("", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d:.3}ms\n", .{elapsed / std.time.ns_per_ms});
+    std.debug.print("took {d}ns\n", .{elapsed});
     std.debug.assert(result == 0x96e2850df6340c78);
 }
 
@@ -119,6 +119,6 @@ test "sipHash24 lorem ipsum" {
     var timer = try std.time.Timer.start();
     const result = sipHash24("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d:.3}ms\n", .{elapsed / std.time.ns_per_ms});
+    std.debug.print("took {d}ns\n", .{elapsed});
     std.debug.assert(result == 0xd7587fe6f8ccd10d);
 }
