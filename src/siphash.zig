@@ -8,11 +8,13 @@
 
 const std = @import("std");
 
-inline fn init(state: *[4]u64, key: [2]u64) void {
-    state[0] = 0x736f6d6570736575 ^ key[0];
-    state[1] = 0x646f72616e646f6d ^ key[1];
-    state[2] = 0x6c7967656e657261 ^ key[0];
-    state[3] = 0x7465646279746573 ^ key[1];
+inline fn init(state: *[4]u64, key: [16]u8) void {
+    const key0 = u8ToU64(&key, 0);
+    const key1 = u8ToU64(&key, 8);
+    state[0] = 0x736f6d6570736575 ^ key0;
+    state[1] = 0x646f72616e646f6d ^ key1;
+    state[2] = 0x6c7967656e657261 ^ key0;
+    state[3] = 0x7465646279746573 ^ key1;
 }
 
 inline fn compress(state: *[4]u64, m: u64) void {
@@ -47,18 +49,18 @@ inline fn round(state: *[4]u64) void {
     state[2] = std.math.rotl(u64, state[2], 32);
 }
 
-inline fn u8ToU64(data: []const u8, i: usize) u64 {
-    return @as(u64, data[i]) |
-        @as(u64, data[i + 1]) << 8 |
-        @as(u64, data[i + 2]) << 16 |
-        @as(u64, data[i + 3]) << 24 |
-        @as(u64, data[i + 4]) << 32 |
-        @as(u64, data[i + 5]) << 40 |
-        @as(u64, data[i + 6]) << 48 |
-        @as(u64, data[i + 7]) << 56;
+inline fn u8ToU64(data: []const u8, offset: usize) u64 {
+    return @as(u64, data[offset]) |
+        @as(u64, data[offset + 1]) << 8 |
+        @as(u64, data[offset + 2]) << 16 |
+        @as(u64, data[offset + 3]) << 24 |
+        @as(u64, data[offset + 4]) << 32 |
+        @as(u64, data[offset + 5]) << 40 |
+        @as(u64, data[offset + 6]) << 48 |
+        @as(u64, data[offset + 7]) << 56;
 }
 
-pub fn sipHash24(data: []const u8, key: [2]u64) u64 {
+pub fn sipHash24(data: []const u8, key: [16]u8) u64 {
     var state: [4]u64 = undefined;
     init(&state, key);
     var m: u64 = undefined;
@@ -83,7 +85,7 @@ pub fn sipHash24(data: []const u8, key: [2]u64) u64 {
 
 test "sipHash24 test1" {
     // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), ""))
-    const key = [2]u64{ 0x0000000000000000, 0x0000000000000000 };
+    const key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     var timer = try std.time.Timer.start();
     const result = sipHash24("", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
@@ -93,7 +95,7 @@ test "sipHash24 test1" {
 
 test "sipHash24 test2" {
     // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), "helloworld!!!"))
-    const key = [2]u64{ 0x0000000000000000, 0x0000000000000000 };
+    const key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     var timer = try std.time.Timer.start();
     const result = sipHash24("helloworld!!!", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
@@ -103,7 +105,7 @@ test "sipHash24 test2" {
 
 test "sipHash24 test3" {
     // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), ""))
-    const key = [2]u64{ 0x00000000000000ff, 0xff00000000000000 };
+    const key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
     var timer = try std.time.Timer.start();
     const result = sipHash24("", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
@@ -113,7 +115,7 @@ test "sipHash24 test3" {
 
 test "sipHash24 lorem ipsum" {
     // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")))
-    const key = [2]u64{ 0x00000000000000ff, 0xff00000000000000 };
+    const key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
     var timer = try std.time.Timer.start();
     const result = sipHash24("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", key);
     const elapsed = @as(f64, @floatFromInt(timer.read()));
