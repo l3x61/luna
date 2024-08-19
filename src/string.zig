@@ -112,9 +112,9 @@ test "string: push" {
     var string = String.init(allocator);
     defer string.deinit();
 
-    _ = try string.append("Hello");
-    _ = try string.append(" ");
-    _ = try string.append("World\n");
+    _ = try string.appendLiteral("Hello");
+    _ = try string.appendLiteral(" ");
+    _ = try string.appendLiteral("World\n");
 
     std.debug.print("{s}", .{string.buffer});
 }
@@ -124,7 +124,7 @@ test "string: print" {
     var string = String.init(allocator);
     defer string.deinit();
 
-    _ = try string.print("Hello, {s} {d}!", .{ "World", 3.1415 });
+    _ = try string.appendPrint("Hello, {s} {d}!\n", .{ "World", 3.1415 });
 
     std.debug.print("{s}", .{string.buffer});
 }

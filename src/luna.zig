@@ -11,11 +11,14 @@ const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
 const Globals = @import("globals.zig").Globals;
 
+const SipHash = @import("siphash.zig");
+
 pub const Luna = struct {
     allocator: Allocator,
     globals: Globals,
 
     pub fn init(allocator: Allocator) Luna {
+        SipHash.randomKey();
         return Luna{
             .allocator = allocator,
             .globals = Globals.init(allocator),

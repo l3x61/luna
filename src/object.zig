@@ -4,6 +4,8 @@ const Allocator = std.mem.Allocator;
 const String = @import("string.zig").String;
 const Vm = @import("vm.zig").Vm;
 
+const sipHash = @import("siphash.zig").sipHash24;
+
 pub const Object = struct {
     tag: Tag,
     as: Union,
@@ -80,6 +82,12 @@ pub const Object = struct {
         }
         switch (left.tag) {
             .String => return String.compare(left.as.string, right.as.string),
+        }
+    }
+
+    pub fn hash(self: Object) u64 {
+        switch (self.tag) {
+            .String => return sipHash(self.as.string.buffer),
         }
     }
 
