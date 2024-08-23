@@ -10,7 +10,7 @@ const Instruction = @import("chunk.zig").Instruction;
 const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 const String = @import("string.zig").String;
-const Globals = @import("globals.zig").Globals;
+const Table = @import("table.zig").Table;
 
 pub const Vm = struct {
     allocator: Allocator,
@@ -18,13 +18,13 @@ pub const Vm = struct {
     chunk: Chunk,
     ip: usize,
     root: ?*Object = null,
-    globals: *Globals,
+    globals: *Table,
 
     const Errror = error{
         StackUnderflow,
     };
 
-    pub fn init(allocator: Allocator, chunk: Chunk, globals: *Globals) !Vm {
+    pub fn init(allocator: Allocator, chunk: Chunk, globals: *Table) !Vm {
         return Vm{
             .allocator = allocator,
             .stack = try Array(Value).initCapacity(allocator, 1024),
@@ -163,12 +163,18 @@ pub const Vm = struct {
                 .SETG => {
                     var key = try (try self.stackPop()).clone();
                     const value = try (try self.stackPeek()).clone();
-                    try self.globals.set(&key, value);
+                    // TODO: delete ?
+                    // if (Value.compare(Value.initNull(), value)) {
+                    //     _ = self.globals.remove(key);
+                    //     key.deinit();
+                    //     return;
+                    // }
+                    if (try self.globals.set(key, value) == false) key.deinit();
                 },
                 .GETG => {
                     const key = try self.stackPop();
-                    const entry = self.globals.get(key);
-                    try self.stackPush(if (entry) |e| e.value else Value.initNull());
+                    const value = self.globals.get(key);
+                    try self.stackPush(if (value) |val| val else Value.initNull());
                 },
                 .HALT => return,
             }

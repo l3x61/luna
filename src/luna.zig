@@ -9,26 +9,26 @@ const Parser = @import("parser.zig").Parser;
 const Value = @import("value.zig").Value;
 const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
-const Globals = @import("globals.zig").Globals;
+const Table = @import("table.zig").Table;
 
 const SipHash = @import("siphash.zig");
 
 pub const Luna = struct {
     allocator: Allocator,
-    globals: Globals,
+    globals: Table,
 
     pub fn init(allocator: Allocator) Luna {
         SipHash.randomKey();
         return Luna{
             .allocator = allocator,
-            .globals = Globals.init(allocator),
+            .globals = Table.init(allocator),
         };
     }
 
     pub fn deinit(self: *Luna) void {
-        for (self.globals.entries.items) |*entry| {
-            entry.key.deinit();
-            entry.value.deinit();
+        for (self.globals.entries) |*entry| {
+            if (entry.key) |*key| key.deinit();
+            if (entry.value) |*value| value.deinit();
         }
         self.globals.deinit();
     }
