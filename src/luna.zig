@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const builtin = @import("builtin");
 const Ansi = @import("ansi.zig");
 const Token = @import("token.zig").Token;
 const Lexer = @import("lexer.zig").Lexer;
@@ -40,7 +41,10 @@ pub const Luna = struct {
         loop: while (true) {
             try stdout.print("> ", .{});
             var buffer: [1024]u8 = undefined;
-            const line = try stdin.readUntilDelimiter(&buffer, '\n');
+            var line = try stdin.readUntilDelimiter(&buffer, '\n');
+
+            if (builtin.os.tag == .windows and line[line.len - 1] == '\r') line.len -= 1;
+
             if (line.len == 0) continue :loop;
             if (std.mem.eql(u8, line, "exit")) break :loop;
             var parser = Parser.init(self.allocator, line);

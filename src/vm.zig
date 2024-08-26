@@ -163,12 +163,6 @@ pub const Vm = struct {
                 .SETG => {
                     var key = try (try self.stackPop()).clone();
                     const value = try (try self.stackPeek()).clone();
-                    // TODO: delete ?
-                    // if (Value.compare(Value.initNull(), value)) {
-                    //     _ = self.globals.remove(key);
-                    //     key.deinit();
-                    //     return;
-                    // }
                     if (try self.globals.set(key, value) == false) key.deinit();
                 },
                 .GETG => {
