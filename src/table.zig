@@ -38,6 +38,7 @@ pub const Table = struct {
         var entry = find(self.entries, key);
         const is_new_key = entry.key == null;
         if (is_new_key) entry.key = key;
+        if (entry.value) |_| entry.value.?.deinit();
         entry.value = value;
         if (is_new_key) self.count += 1;
         return is_new_key;
