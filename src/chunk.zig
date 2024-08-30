@@ -186,7 +186,7 @@ pub const Chunk = struct {
                 const node = root.as.binary;
                 if (node.operator.tag == .Equal) {
                     try self.compile(node.right, source);
-                    const identifier = node.left.as.primary.operand.lexeme(source);
+                    const identifier = node.left.as.primary.operand.lexeme;
                     var value = try Value.initObjectStringLiteral(self.allocator, identifier);
                     try self.pushConstant(&value);
                     try self.pushOpCode(.SETG);
@@ -237,15 +237,15 @@ pub const Chunk = struct {
                         value = Value.initBoolean(false);
                     },
                     .Number => {
-                        const number = try std.fmt.parseFloat(f64, node.operand.lexeme(source));
+                        const number = try std.fmt.parseFloat(f64, node.operand.lexeme);
                         value = Value.initNumber(number);
                     },
                     .String => {
-                        const string = node.operand.stringValue(source);
+                        const string = node.operand.stringLiteral();
                         value = try Value.initObjectStringLiteral(self.allocator, string);
                     },
                     .Identifier => {
-                        const identifier = node.operand.lexeme(source);
+                        const identifier = node.operand.lexeme;
                         value = try Value.initObjectStringLiteral(self.allocator, identifier);
                     },
                     else => {

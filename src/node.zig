@@ -157,17 +157,17 @@ pub const Node = struct {
                 }
             },
             .Binary => {
-                std.debug.print("Binary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.binary.operator.lexeme(source)});
+                std.debug.print("Binary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.binary.operator.lexeme});
                 try self.as.binary.left.debugInternal(&_prefix, source, false);
                 try self.as.binary.right.debugInternal(&_prefix, source, true);
             },
             .Unary => {
-                std.debug.print("Unary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.unary.operator.lexeme(source)});
+                std.debug.print("Unary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.unary.operator.lexeme});
                 try self.as.unary.operand.debugInternal(&_prefix, source, true);
             },
             .Primary => {
                 const operand = self.as.primary.operand;
-                std.debug.print("{} " ++ Ansi.Cyan ++ "{s}\n" ++ Ansi.Reset, .{ operand.tag, operand.lexeme(source) });
+                std.debug.print("{} " ++ Ansi.Cyan ++ "{s}\n" ++ Ansi.Reset, .{ operand.tag, operand.lexeme });
             },
         }
     }

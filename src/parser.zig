@@ -217,7 +217,7 @@ pub const Parser = struct {
                 },
             }
             std.debug.print("\n" ++ Ansi.Reset, .{});
-            token.showInSource(self.lexer.source, Ansi.Red);
+            token.showInSource(Ansi.Red);
             return Error.SyntaxError;
         }
     }

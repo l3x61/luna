@@ -45,7 +45,7 @@ pub const Lexer = struct {
 
     pub fn next(self: *Lexer) Token {
         if (self.isEndOfFile()) {
-            return Token.init(.EndOfFile, self.source.len, 0);
+            return Token.init(.EndOfFile, self.source, "");
         }
 
         if (self.isWhitespace()) {
@@ -64,114 +64,114 @@ pub const Lexer = struct {
 
         if (c == '+') {
             self.advance();
-            return Token.init(.Plus, self.cursor - 1, 1);
+            return Token.init(.Plus, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '-') {
             self.advance();
-            return Token.init(.Minus, self.cursor - 1, 1);
+            return Token.init(.Minus, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '*') {
             self.advance();
             if (self.char() == '*') {
                 self.advance();
-                return Token.init(.StarStar, self.cursor - 2, 2);
+                return Token.init(.StarStar, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Star, self.cursor - 1, 1);
+            return Token.init(.Star, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '/') {
             self.advance();
-            return Token.init(.Slash, self.cursor - 1, 1);
+            return Token.init(.Slash, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '%') {
             self.advance();
-            return Token.init(.Percent, self.cursor - 1, 1);
+            return Token.init(.Percent, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '.') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '.') {
                 self.advance();
-                return Token.init(.DotDot, self.cursor - 2, 2);
+                return Token.init(.DotDot, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Dot, self.cursor - 1, 1);
+            return Token.init(.Dot, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '|') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '|') {
                 self.advance();
-                return Token.init(.PipePipe, self.cursor - 2, 2);
+                return Token.init(.PipePipe, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Pipe, self.cursor - 1, 1);
+            return Token.init(.Pipe, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '&') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '&') {
                 self.advance();
-                return Token.init(.AndAnd, self.cursor - 2, 2);
+                return Token.init(.AndAnd, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.And, self.cursor - 1, 1);
+            return Token.init(.And, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '!') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '=') {
                 self.advance();
-                return Token.init(.BangEqual, self.cursor - 2, 2);
+                return Token.init(.BangEqual, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Bang, self.cursor - 1, 1);
+            return Token.init(.Bang, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '<') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '=') {
                 self.advance();
-                return Token.init(.LessEqual, self.cursor - 2, 2);
+                return Token.init(.LessEqual, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Less, self.cursor - 1, 1);
+            return Token.init(.Less, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '>') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '=') {
                 self.advance();
-                return Token.init(.GreaterEqual, self.cursor - 2, 2);
+                return Token.init(.GreaterEqual, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Greater, self.cursor - 1, 1);
+            return Token.init(.Greater, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '=') {
             self.advance();
             if (!self.isEndOfFile() and self.char() == '=') {
                 self.advance();
-                return Token.init(.EqualEqual, self.cursor - 2, 2);
+                return Token.init(.EqualEqual, self.source, self.source[self.cursor - 2 .. self.cursor]);
             }
-            return Token.init(.Equal, self.cursor - 1, 1);
+            return Token.init(.Equal, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '(') {
             self.advance();
-            return Token.init(.LeftParenthesis, self.cursor - 1, 1);
+            return Token.init(.LeftParenthesis, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == ')') {
             self.advance();
-            return Token.init(.RightParenthesis, self.cursor - 1, 1);
+            return Token.init(.RightParenthesis, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '{') {
             self.advance();
-            return Token.init(.LeftBrace, self.cursor - 1, 1);
+            return Token.init(.LeftBrace, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (c == '}') {
             self.advance();
-            return Token.init(.RightBrace, self.cursor - 1, 1);
+            return Token.init(.RightBrace, self.source, self.source[self.cursor - 1 .. self.cursor]);
         }
 
         if (self.isDigit()) {
@@ -179,7 +179,7 @@ pub const Lexer = struct {
             while (!self.isEndOfFile() and self.isDigit()) {
                 self.advance();
             }
-            return Token.init(.Number, start, self.cursor - start);
+            return Token.init(.Number, self.source, self.source[start..self.cursor]);
         }
 
         if (self.isAlpha()) {
@@ -188,13 +188,13 @@ pub const Lexer = struct {
                 self.advance();
             }
             if (std.mem.eql(u8, "null", self.source[start..self.cursor])) {
-                return Token.init(.KeywordNull, start, self.cursor - start);
+                return Token.init(.KeywordNull, self.source, self.source[start..self.cursor]);
             } else if (std.mem.eql(u8, "true", self.source[start..self.cursor])) {
-                return Token.init(.KeywordTrue, start, self.cursor - start);
+                return Token.init(.KeywordTrue, self.source, self.source[start..self.cursor]);
             } else if (std.mem.eql(u8, "false", self.source[start..self.cursor])) {
-                return Token.init(.KeywordFalse, start, self.cursor - start);
+                return Token.init(.KeywordFalse, self.source, self.source[start..self.cursor]);
             }
-            return Token.init(.Identifier, start, self.cursor - start);
+            return Token.init(.Identifier, self.source, self.source[start..self.cursor]);
         }
 
         if (c == '\'' or c == '"') {
@@ -206,16 +206,16 @@ pub const Lexer = struct {
                     // TODO: escape sequence
                 }
                 if (self.char() == '\n') {
-                    return Token.init(.ErrorStringNewline, start, self.cursor - start);
+                    return Token.init(.ErrorStringNewline, self.source, self.source[start..self.cursor]);
                 }
                 self.advance();
             }
             if (self.isEndOfFile()) {
-                return Token.init(.ErrorStringOpen, start, self.cursor - start);
+                return Token.init(.ErrorStringOpen, self.source, self.source[start..self.cursor]);
             }
             self.advance();
-            return Token.init(.String, start, self.cursor - start);
+            return Token.init(.String, self.source, self.source[start..self.cursor]);
         }
-        return Token.init(.ErrorCharacter, self.cursor, 1);
+        return Token.init(.ErrorCharacter, self.source, self.source[self.cursor .. self.cursor + 1]);
     }
 };
