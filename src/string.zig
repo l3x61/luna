@@ -39,17 +39,14 @@ pub const String = struct {
     }
 
     pub fn deinit(self: *String) void {
-        if (self.capacity != 0) {
-            self.allocator.free(self.buffer.ptr[0..self.capacity]);
-            self.buffer = &.{};
-            self.capacity = 0;
-        }
+        if (self.capacity == 0) return;
+        self.allocator.free(self.buffer.ptr[0..self.capacity]);
+        self.buffer = &.{};
+        self.capacity = 0;
     }
 
     pub fn clone(self: *String) !String {
-        var new = self.allocator.alloc(u8, self.capacity) catch {
-            return Error.OutOfMemory;
-        };
+        var new = self.allocator.alloc(u8, self.capacity) catch return Error.OutOfMemory;
         new.len = self.buffer.len;
         @memcpy(new, self.buffer);
         return String{
@@ -60,9 +57,7 @@ pub const String = struct {
     }
 
     pub fn appendLiteral(self: *String, slice: []const u8) Error!void {
-        while (self.capacity < self.buffer.len + slice.len) {
-            try self.setCapacity(utils.nextPowerOf2(self.buffer.len + slice.len));
-        }
+        if (self.capacity < self.buffer.len + slice.len) try self.setCapacity(utils.nextPowerOf2(self.buffer.len + slice.len));
         for (slice) |c| {
             self.buffer.ptr[self.buffer.len] = c;
             self.buffer.len += 1;
@@ -81,8 +76,8 @@ pub const String = struct {
         try self.appendLiteral(list.items);
     }
 
-    pub fn compare(this: String, that: String) bool {
-        return std.mem.eql(u8, this.buffer, that.buffer);
+    pub fn compare(a: String, b: String) bool {
+        return std.mem.eql(u8, a.buffer, b.buffer);
     }
 
     pub fn format(self: String, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -93,9 +88,7 @@ pub const String = struct {
 
     fn setCapacity(self: *String, new_capacity: usize) Error!void {
         const old_length = self.buffer.len;
-        self.buffer = self.allocator.realloc(self.buffer.ptr[0..self.capacity], new_capacity) catch {
-            return Error.OutOfMemory;
-        };
+        self.buffer = self.allocator.realloc(self.buffer.ptr[0..self.capacity], new_capacity) catch return Error.OutOfMemory;
         self.capacity = new_capacity;
         self.buffer.len = old_length;
     }
