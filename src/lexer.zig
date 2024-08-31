@@ -45,7 +45,7 @@ pub const Lexer = struct {
 
     pub fn next(self: *Lexer) Token {
         if (self.isEndOfFile()) {
-            return Token.init(.EndOfFile, self.source, "");
+            return Token.init(.EndOfFile, self.source, self.source[self.cursor..self.cursor]);
         }
 
         if (self.isWhitespace()) {
