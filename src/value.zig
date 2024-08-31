@@ -16,12 +16,6 @@ pub const Value = struct {
         Boolean,
         Number,
         Object,
-
-        pub fn format(self: Tag, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-            _ = fmt;
-            _ = options;
-            try writer.print("{s}", .{@tagName(self)});
-        }
     };
 
     const Union = union {
@@ -34,6 +28,13 @@ pub const Value = struct {
     pub const Error = error{
         DivisionBy0,
     };
+
+    pub fn tagName(value: Value) []const u8 {
+        return switch (value.tag) {
+            .Object => @tagName(value.as.object.tag),
+            else => @tagName(value.tag),
+        };
+    }
 
     pub fn initNull() Value {
         return Value{ .tag = Tag.Null, .as = Union{ .null = {} } };

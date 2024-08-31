@@ -8,7 +8,7 @@ const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 
 pub const OpCode = enum(u8) {
-    CONST,
+    PUSH,
     POP,
     ADD,
     SUB,
@@ -63,9 +63,7 @@ pub const Chunk = struct {
 
     pub fn deinit(self: *Chunk) void {
         self.bytecode.deinit();
-        for (self.constants.items) |*constant| {
-            constant.deinit();
-        }
+        for (self.constants.items) |*constant| constant.deinit();
         self.constants.deinit();
     }
 
@@ -86,10 +84,24 @@ pub const Chunk = struct {
             try self.constants.push(value.*);
             index = self.constants.count() - 1;
         }
-        if (index > std.math.maxInt(u24)) {
-            return Error.ConstantPoolOverflow;
+        if (index > std.math.maxInt(u24)) return Error.ConstantPoolOverflow;
+        try self.pushOpCode(OpCode.PUSH);
+        try self.pushByte(@intCast(index >> 16));
+        try self.pushByte(@intCast(index >> 8));
+        try self.pushByte(@intCast(index));
+    }
+
+    fn pushInstruction(self: *Chunk, opcode: OpCode, value: *Value) !void {
+        var index: usize = undefined;
+        if (self.constants.searchLinearIndex(value.*, Value.compare)) |found| {
+            value.deinit();
+            index = found;
+        } else {
+            try self.constants.push(value.*);
+            index = self.constants.count() - 1;
         }
-        try self.pushOpCode(OpCode.CONST);
+        if (index > std.math.maxInt(u24)) return Error.ConstantPoolOverflow;
+        try self.pushOpCode(opcode);
         try self.pushByte(@intCast(index >> 16));
         try self.pushByte(@intCast(index >> 8));
         try self.pushByte(@intCast(index));
@@ -105,7 +117,7 @@ pub const Chunk = struct {
         }
         const opcode = @as(OpCode, @enumFromInt(self.bytecode.get(index).?));
         switch (opcode) {
-            .CONST => {
+            .PUSH, .SETG, .GETG => {
                 const high: u24 = @as(u24, self.bytecode.get(index + 1).?) << 16;
                 const mid: u24 = @as(u24, self.bytecode.get(index + 2).?) << 8;
                 const low: u24 = self.bytecode.get(index + 3).?;
@@ -130,15 +142,14 @@ pub const Chunk = struct {
     pub fn debugInstruction(self: *Chunk, address: usize) usize {
         const instruction = self.getInstruction(address);
         switch (instruction.opcode) {
-            .CONST => {
+            .PUSH, .SETG, .GETG => {
                 const value = self.getConstant(instruction.index);
-                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ " {d}    ({} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
+                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "    ({s} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
                     address,
                     @as(u8, @intFromEnum(instruction.opcode)),
                     instruction.index,
                     instruction.opcode,
-                    instruction.index,
-                    value.tag,
+                    value.tagName(),
                     value,
                 });
             },
@@ -162,9 +173,7 @@ pub const Chunk = struct {
                 const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
                     try self.compile(statement, source);
-                    if (statement != last) {
-                        try self.pushOpCode(.POP);
-                    }
+                    if (statement != last) try self.pushOpCode(.POP);
                 }
                 try self.pushOpCode(.HALT);
             },
@@ -177,19 +186,15 @@ pub const Chunk = struct {
                 };
                 for (node.statements.items) |statement| {
                     try self.compile(statement, source);
-                    if (statement != last) {
-                        try self.pushOpCode(.POP);
-                    }
+                    if (statement != last) try self.pushOpCode(.POP);
                 }
             },
             .Binary => {
                 const node = root.as.binary;
                 if (node.operator.tag == .Equal) {
                     try self.compile(node.right, source);
-                    const identifier = node.left.as.primary.operand.lexeme;
-                    var value = try Value.initObjectStringLiteral(self.allocator, identifier);
-                    try self.pushConstant(&value);
-                    try self.pushOpCode(.SETG);
+                    var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
+                    try self.pushInstruction(.SETG, &identifier);
                     return;
                 }
                 try self.compile(node.left, source);
@@ -245,15 +250,15 @@ pub const Chunk = struct {
                         value = try Value.initObjectStringLiteral(self.allocator, string);
                     },
                     .Identifier => {
-                        const identifier = node.operand.lexeme;
-                        value = try Value.initObjectStringLiteral(self.allocator, identifier);
+                        var identifier = try Value.initObjectStringLiteral(self.allocator, node.operand.lexeme);
+                        try self.pushInstruction(.GETG, &identifier);
+                        return;
                     },
                     else => {
                         std.debug.panic("{} not defined for primary node", .{node.operand.tag});
                     },
                 }
                 try self.pushConstant(&value);
-                if (node.operand.tag == .Identifier) try self.pushOpCode(.GETG);
             },
         }
     }

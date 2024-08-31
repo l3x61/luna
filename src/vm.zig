@@ -67,7 +67,7 @@ pub const Vm = struct {
             const instruction = self.chunk.getInstruction(self.ip);
             self.ip = instruction.next;
             switch (instruction.opcode) {
-                .CONST => {
+                .PUSH => {
                     try self.stackPush(self.chunk.getConstant(instruction.index));
                 },
                 .POP => _ = try self.stackPop(),
@@ -161,12 +161,12 @@ pub const Vm = struct {
                     try self.stackPush(Value.initBoolean(left and right));
                 },
                 .SETG => {
-                    var key = try (try self.stackPop()).clone();
+                    var key = try (self.chunk.getConstant(instruction.index)).clone();
                     const value = try (try self.stackPeek()).clone();
                     if (try self.globals.set(key, value) == false) key.deinit();
                 },
                 .GETG => {
-                    const key = try self.stackPop();
+                    const key = self.chunk.getConstant(instruction.index);
                     const value = self.globals.get(key);
                     try self.stackPush(if (value) |val| val else Value.initNull());
                 },
