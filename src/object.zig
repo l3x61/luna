@@ -77,9 +77,7 @@ pub const Object = struct {
         }
     }
     pub fn compare(left: *Object, right: *Object) bool {
-        if (left.tag != right.tag) {
-            return false;
-        }
+        if (left.tag != right.tag) return false;
         switch (left.tag) {
             .String => return String.compare(left.as.string, right.as.string),
         }
