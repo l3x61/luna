@@ -5,9 +5,9 @@ const utils = @import("utils.zig");
 
 pub fn Array(comptime Type: type) type {
     return struct {
+        allocator: Allocator,
         items: []Type,
         capacity: usize,
-        allocator: Allocator,
 
         const Self = @This();
 
@@ -18,9 +18,9 @@ pub fn Array(comptime Type: type) type {
 
         pub fn init(allocator: Allocator) Self {
             return Self{
+                .allocator = allocator,
                 .items = &.{},
                 .capacity = 0,
-                .allocator = allocator,
             };
         }
 
@@ -47,8 +47,7 @@ pub fn Array(comptime Type: type) type {
         }
 
         pub fn peek(self: *const Self) ?Type {
-            if (self.items.len != 0) return self.items.ptr[self.items.len - 1];
-            return null;
+            if (self.items.len != 0) return self.items.ptr[self.items.len - 1] else return null;
         }
 
         pub fn pop(self: *Self) ?Type {
@@ -58,8 +57,7 @@ pub fn Array(comptime Type: type) type {
         }
 
         pub fn get(self: *const Self, index: usize) ?Type {
-            if (index >= self.items.len) return null;
-            return self.items.ptr[index];
+            if (index >= self.items.len) return null else return self.items.ptr[index];
         }
 
         pub fn set(self: *Self, item: Type, index: usize) Error!void {
@@ -67,21 +65,7 @@ pub fn Array(comptime Type: type) type {
             self.items.ptr[index] = item;
         }
 
-        pub fn insert(self: *Self, item: Type, index: usize) Error!void {
-            if (index > self.items.len) return Error.OutOfBounds;
-            if (self.items.len + 1 >= self.capacity) try self.doubleCapacity();
-            for (self.items, self.items.len..index) |current, i| self.items.ptr[i + 1] = current;
-            self.items.ptr[index] = item;
-            self.items.len += 1;
-        }
-
-        pub fn remove(self: *Self, index: usize) Error!void {
-            if (index >= self.items.len) return Error.OutOfBounds;
-            for (index..self.items.len) |i| self.items.ptr[i] = self.items.ptr[i + 1];
-            self.items.len -= 1;
-        }
-
-        pub fn searchLinear(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
+        pub fn searchLinearIndex(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
             for (self.items, 0..) |current, index| if (compare(current, item)) return index;
             return null;
         }
@@ -97,9 +81,7 @@ pub fn Array(comptime Type: type) type {
                 std.math.maxInt(usize) => return Error.OutOfMemory,
                 else => self.capacity * 2,
             };
-            self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch {
-                return Error.OutOfMemory;
-            };
+            self.items = self.allocator.realloc(self.items.ptr[0..self.capacity], new_capacity) catch return Error.OutOfMemory;
             self.capacity = new_capacity;
             self.items.len = old_length;
         }
