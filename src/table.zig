@@ -34,7 +34,9 @@ pub const Table = struct {
     }
 
     pub fn set(self: *Table, key: Value, value: Value) !bool {
-        if (@as(f64, @floatFromInt(self.count + 1)) > @as(f64, @floatFromInt(self.entries.len)) * 0.75) try self.resize();
+        const count = @as(f64, @floatFromInt(self.count));
+        const capacity = @as(f64, @floatFromInt(self.entries.len));
+        if (count + 1 > capacity * 0.75) try self.resize();
         var entry = find(self.entries, key);
         const is_new_key = entry.key == null;
         if (is_new_key) entry.key = key;
@@ -47,9 +49,7 @@ pub const Table = struct {
     pub fn get(self: *Table, key: Value) ?Value {
         if (self.entries.len == 0) return null;
         const entry = find(self.entries, key);
-        if (entry.key) |_| {
-            return entry.value;
-        }
+        if (entry.key) |_| return entry.value;
         return null;
     }
 
@@ -64,19 +64,10 @@ pub const Table = struct {
     }
 
     pub fn debug(self: Table) void {
-        var tombstones: f64 = 0.0;
         for (self.entries) |entry| {
-            if (entry.key == null) {
-                if (entry.value) |_| {
-                    tombstones += 1.0;
-                }
-                continue;
-            }
+            if (entry.key == null) continue;
             std.debug.print("{}: {}\n", .{ entry.key.?, entry.value.? });
         }
-        const capacity: f64 = @floatFromInt(self.entries.len);
-        const count: f64 = @floatFromInt(self.count);
-        std.debug.print("load factor: {d:.2}%\n", .{count / capacity});
     }
 
     fn find(entries: []Entry, key: Value) *Entry {
@@ -99,10 +90,7 @@ pub const Table = struct {
     fn resize(self: *Table) !void {
         self.prime_index += 1;
         const new_entries = try self.allocator.alloc(Entry, primes[self.prime_index]);
-        for (new_entries) |*entry| {
-            entry.key = null;
-            entry.value = null;
-        }
+        for (new_entries) |*entry| entry.* = Entry{ .key = null, .value = null };
         self.count = 0;
         for (self.entries) |*entry| {
             if (entry.key) |entry_key| {
