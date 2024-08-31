@@ -92,16 +92,12 @@ pub const Node = struct {
     pub fn free(self: *Node, allocator: Allocator) void {
         switch (self.tag) {
             .Program => {
-                for (self.as.program.statements.items) |statement| {
-                    statement.free(allocator);
-                }
+                for (self.as.program.statements.items) |statement| statement.free(allocator);
                 self.as.program.statements.deinit();
                 allocator.destroy(self);
             },
             .Block => {
-                for (self.as.block.statements.items) |statement| {
-                    statement.free(allocator);
-                }
+                for (self.as.block.statements.items) |statement| statement.free(allocator);
                 self.as.block.statements.deinit();
                 allocator.destroy(self);
             },
