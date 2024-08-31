@@ -28,9 +28,7 @@ pub const Parser = struct {
     pub fn parseProgram(self: *Parser) !*Node {
         const node = try Node.initProgramNode(self.allocator);
         errdefer node.free(self.allocator);
-        while (self.token.tag != Token.Tag.EndOfFile) {
-            try node.as.program.statements.push(try self.parseStatement());
-        }
+        while (self.token.tag != Token.Tag.EndOfFile) try node.as.program.statements.push(try self.parseStatement());
         return node;
     }
 
@@ -45,9 +43,7 @@ pub const Parser = struct {
         const node = try Node.initBlockNode(self.allocator);
         errdefer node.free(self.allocator);
         _ = try self.eatTag(.LeftBrace);
-        while (self.token.tag != Token.Tag.RightBrace) {
-            try node.as.block.statements.push(try self.parseStatement());
-        }
+        while (self.token.tag != Token.Tag.RightBrace) try node.as.block.statements.push(try self.parseStatement());
         _ = try self.eatTag(.RightBrace);
         return node;
     }
@@ -172,9 +168,8 @@ pub const Parser = struct {
             const operand = try self.parsePrimaryExpression();
             errdefer operand.free(self.allocator);
             return Node.initUnaryNode(self.allocator, operator, operand);
-        } else {
-            return self.parsePrimaryExpression();
         }
+        return self.parsePrimaryExpression();
     }
 
     fn parsePrimaryExpression(self: *Parser) !*Node {
@@ -210,9 +205,7 @@ pub const Parser = struct {
                 1 => std.debug.print("{}", .{expected[0]}),
                 2 => std.debug.print("{}" ++ Ansi.Reset ++ " or " ++ Ansi.Green ++ "{}", .{ expected[0], expected[1] }),
                 else => {
-                    for (expected[0 .. expected.len - 2]) |tag| {
-                        std.debug.print("{}, ", .{tag});
-                    }
+                    for (expected[0 .. expected.len - 2]) |tag| std.debug.print("{}, ", .{tag});
                     std.debug.print("{}" ++ Ansi.Reset ++ " or " ++ Ansi.Green ++ "{}", .{ expected[expected.len - 2], expected[expected.len - 1] });
                 },
             }
