@@ -103,9 +103,7 @@ pub const Value = struct {
     }
 
     pub fn compare(left: Value, right: Value) bool {
-        if (left.tag != right.tag) {
-            return false;
-        }
+        if (left.tag != right.tag) return false;
         switch (left.tag) {
             .Null => return true,
             .Boolean => return left.as.boolean == right.as.boolean,
