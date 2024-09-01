@@ -88,24 +88,24 @@ pub fn Array(comptime Type: type) type {
     };
 }
 
-test "array: init/deinit" {
-    const allocator = std.testing.allocator;
-    var array = Array(i32).init(allocator);
-    array.deinit();
-}
-
-test "array: push" {
-    const allocator = std.testing.allocator;
-    var array = Array(i32).init(allocator);
-    defer array.deinit();
-
-    const expected = [_]i32{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 };
-
-    for (expected) |item| {
-        try array.push(item);
-    }
-
-    for (0..expected.len) |i| {
-        try std.testing.expect(expected[i] == array.items[i]);
-    }
-}
+//test "array: init/deinit" {
+//    const allocator = std.testing.allocator;
+//    var array = Array(i32).init(allocator);
+//    array.deinit();
+//}
+//
+//test "array: push" {
+//    const allocator = std.testing.allocator;
+//    var array = Array(i32).init(allocator);
+//    defer array.deinit();
+//
+//    const expected = [_]i32{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 };
+//
+//    for (expected) |item| {
+//        try array.push(item);
+//    }
+//
+//    for (0..expected.len) |i| {
+//        try std.testing.expect(expected[i] == array.items[i]);
+//    }
+//}

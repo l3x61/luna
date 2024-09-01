@@ -34,6 +34,20 @@ pub const Luna = struct {
         self.globals.deinit();
     }
 
+    pub fn runSource(self: *Luna, source: []const u8) !void {
+        var parser = Parser.init(self.allocator, source);
+        var ast = try parser.parse();
+        defer ast.free(self.allocator);
+
+        var chunk = Chunk.init(self.allocator);
+        defer chunk.deinit();
+        try chunk.compile(ast, source);
+
+        var vm = try Vm.init(self.allocator, chunk, &self.globals);
+        defer vm.deinit();
+        try vm.run();
+    }
+
     pub fn repl(self: *Luna) !void {
         const stdin = std.io.getStdIn().reader();
         const stdout = std.io.getStdOut().writer();
@@ -61,10 +75,56 @@ pub const Luna = struct {
             defer vm.deinit();
             var timer = try std.time.Timer.start();
             try vm.run();
-            const elapsed = @as(f64, @floatFromInt(timer.read()));
+            const elapsed: f64 = @floatFromInt(timer.read());
             vm.debugStack();
             vm.globals.debug();
             try stdout.print("Took: " ++ Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
         }
     }
 };
+
+fn doTest(allocator: Allocator, test_name: []const u8, source: []const u8) !void {
+    var luna = Luna.init(allocator);
+    defer luna.deinit();
+
+    var timer = try std.time.Timer.start();
+    try luna.runSource(source);
+    const elapsed: f64 = @floatFromInt(timer.read());
+    std.debug.print(Ansi.Cyan ++ "{s}" ++ Ansi.Reset ++ " took: " ++ Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{ test_name, elapsed / std.time.ns_per_ms });
+}
+
+test "empty" {
+    const source =
+        \\
+    ;
+    try doTest(std.testing.allocator, @src().fn_name, source);
+}
+
+test "free leaked string" {
+    const source =
+        \\a = "hello"
+        \\a = "world"
+        \\a = "!"
+    ;
+    try doTest(std.testing.allocator, @src().fn_name, source);
+}
+
+test "random expression" {
+    const source =
+        \\1 + 2 *
+        \\ 3 / 4 -
+        \\5 **
+        \\6 %
+        \\7
+    ;
+    try doTest(std.testing.allocator, @src().fn_name, source);
+}
+
+test "chain assign" {
+    const source =
+        \\a = b = c = c = d = e = 1
+        \\a = b = c = c = d = e = 'test'
+        \\a = b = c = c = d = e = 1 + 2 * 3 / 4 - 5 ** 6 % 7
+    ;
+    try doTest(std.testing.allocator, @src().fn_name, source);
+}

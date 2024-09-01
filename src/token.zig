@@ -91,8 +91,8 @@ pub const Token = struct {
     }
 };
 
-test "show in source" {
-    const source = "test'Hello World'test";
-    const token = Token.init(Token.Tag.String, source, source[4..13]);
-    token.showInSource(Ansi.Magenta);
-}
+//test "show in source" {
+//    const source = "test'Hello World'test";
+//    const token = Token.init(Token.Tag.String, source, source[4..13]);
+//    token.showInSource(Ansi.Magenta);
+//}

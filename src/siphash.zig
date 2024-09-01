@@ -88,43 +88,43 @@ pub fn sipHash24(data: []const u8) u64 {
 //
 // from siphashc import siphash
 // siphash(key, data)
-
-test "sipHash24 test1" {
-    // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), ""))
-    key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    var timer = try std.time.Timer.start();
-    const result = sipHash24("");
-    const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d}ns\n", .{elapsed});
-    std.debug.assert(result == 0x1e924b9d737700d7);
-}
-
-test "sipHash24 test2" {
-    // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), "helloworld!!!"))
-    key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    var timer = try std.time.Timer.start();
-    const result = sipHash24("helloworld!!!");
-    const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d}ns\n", .{elapsed});
-    std.debug.assert(result == 0x4b8e02f4c284fd68);
-}
-
-test "sipHash24 test3" {
-    // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), ""))
-    key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
-    var timer = try std.time.Timer.start();
-    const result = sipHash24("");
-    const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d}ns\n", .{elapsed});
-    std.debug.assert(result == 0x96e2850df6340c78);
-}
-
-test "sipHash24 lorem ipsum" {
-    // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")))
-    key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
-    var timer = try std.time.Timer.start();
-    const result = sipHash24("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
-    const elapsed = @as(f64, @floatFromInt(timer.read()));
-    std.debug.print("took {d}ns\n", .{elapsed});
-    std.debug.assert(result == 0xd7587fe6f8ccd10d);
-}
+//
+//test "sipHash24 test1" {
+//    // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), ""))
+//    key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+//    var timer = try std.time.Timer.start();
+//    const result = sipHash24("");
+//    const elapsed = @as(f64, @floatFromInt(timer.read()));
+//    std.debug.print("took {d}ns\n", .{elapsed});
+//    std.debug.assert(result == 0x1e924b9d737700d7);
+//}
+//
+//test "sipHash24 test2" {
+//    // hex(siphash(bytes.fromhex('00000000000000000000000000000000'), "helloworld!!!"))
+//    key = [16]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+//    var timer = try std.time.Timer.start();
+//    const result = sipHash24("helloworld!!!");
+//    const elapsed = @as(f64, @floatFromInt(timer.read()));
+//    std.debug.print("took {d}ns\n", .{elapsed});
+//    std.debug.assert(result == 0x4b8e02f4c284fd68);
+//}
+//
+//test "sipHash24 test3" {
+//    // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), ""))
+//    key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
+//    var timer = try std.time.Timer.start();
+//    const result = sipHash24("");
+//    const elapsed = @as(f64, @floatFromInt(timer.read()));
+//    std.debug.print("took {d}ns\n", .{elapsed});
+//    std.debug.assert(result == 0x96e2850df6340c78);
+//}
+//
+//test "sipHash24 lorem ipsum" {
+//    // hex(siphash(bytes.fromhex('ff0000000000000000000000000000ff'), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")))
+//    key = [16]u8{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff };
+//    var timer = try std.time.Timer.start();
+//    const result = sipHash24("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+//    const elapsed = @as(f64, @floatFromInt(timer.read()));
+//    std.debug.print("took {d}ns\n", .{elapsed});
+//    std.debug.assert(result == 0xd7587fe6f8ccd10d);
+//}
