@@ -186,7 +186,12 @@ pub const Chunk = struct {
         switch (root.tag) {
             .Program => {
                 const node = root.as.program;
-                const last = node.statements.peek() orelse return;
+                const last = node.statements.peek() orelse {
+                    var value = Value.initNull();
+                    try self.pushConstant(&value);
+                    try self.pushOpCode(.HALT);
+                    return;
+                };
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
                     if (statement != last) try self.pushOpCode(.POP);

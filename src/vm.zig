@@ -20,7 +20,7 @@ pub const Vm = struct {
     root: ?*Object = null,
     globals: *Table,
 
-    const Errror = error{
+    pub const Errror = error{
         StackUnderflow,
     };
 

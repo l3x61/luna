@@ -34,7 +34,7 @@ pub const Luna = struct {
         self.globals.deinit();
     }
 
-    pub fn runSource(self: *Luna, source: []const u8) !void {
+    pub fn runSource(self: *Luna, source: []const u8) !Value {
         var parser = Parser.init(self.allocator, source);
         var ast = try parser.parse();
         defer ast.free(self.allocator);
@@ -46,6 +46,8 @@ pub const Luna = struct {
         var vm = try Vm.init(self.allocator, chunk, &self.globals);
         defer vm.deinit();
         try vm.run();
+        var result = vm.stack.peek() orelse return Vm.Errror.StackUnderflow;
+        return result.clone();
     }
 
     pub fn repl(self: *Luna) !void {
@@ -58,7 +60,7 @@ pub const Luna = struct {
             var buffer: [1024]u8 = undefined;
             var line = try stdin.readUntilDelimiter(&buffer, '\n');
             if (builtin.os.tag == .windows and line[line.len - 1] == '\r') line.len -= 1;
-            if (line.len == 0) continue :loop;
+            //if (line.len == 0) continue :loop;
             if (std.mem.eql(u8, line, "exit")) break :loop;
 
             var parser = Parser.init(self.allocator, line);
@@ -83,21 +85,25 @@ pub const Luna = struct {
     }
 };
 
-fn doTest(allocator: Allocator, test_name: []const u8, source: []const u8) !void {
+fn testWrapper(allocator: Allocator, test_name: []const u8, source: []const u8, expected: Value) !bool {
     var luna = Luna.init(allocator);
     defer luna.deinit();
 
     var timer = try std.time.Timer.start();
-    try luna.runSource(source);
+    var result = try luna.runSource(source);
+    defer result.deinit();
     const elapsed: f64 = @floatFromInt(timer.read());
     std.debug.print(Ansi.Cyan ++ "{s}" ++ Ansi.Reset ++ " took: " ++ Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{ test_name, elapsed / std.time.ns_per_ms });
+    return Value.compare(result, expected);
 }
 
 test "empty" {
     const source =
         \\
     ;
-    try doTest(std.testing.allocator, @src().fn_name, source);
+    var expect = Value.initNull();
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
 }
 
 test "free leaked string" {
@@ -106,7 +112,9 @@ test "free leaked string" {
         \\a = "world"
         \\a = "!"
     ;
-    try doTest(std.testing.allocator, @src().fn_name, source);
+    var expect = try Value.initObjectStringLiteral(std.testing.allocator, "!");
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
 }
 
 test "random expression" {
@@ -117,7 +125,9 @@ test "random expression" {
         \\6 %
         \\7
     ;
-    try doTest(std.testing.allocator, @src().fn_name, source);
+    var expect = Value.initNumber(1.5);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
 }
 
 test "chain assign" {
@@ -126,5 +136,19 @@ test "chain assign" {
         \\a = b = c = c = d = e = 'test'
         \\a = b = c = c = d = e = 1 + 2 * 3 / 4 - 5 ** 6 % 7
     ;
-    try doTest(std.testing.allocator, @src().fn_name, source);
+    var expect = Value.initNumber(1.5);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+}
+
+test "get global" {
+    // global variables dont need an explicit declaration
+    // they are created on the fly
+    // reading a nonexistent global variable will return null
+    const source =
+        \\global_var
+    ;
+    var expect = Value.initNull();
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
 }
