@@ -41,7 +41,7 @@ pub const Luna = struct {
 
         var chunk = Chunk.init(self.allocator);
         defer chunk.deinit();
-        try chunk.compile(ast, source);
+        try chunk.compile(ast);
 
         var vm = try Vm.init(self.allocator, chunk, &self.globals);
         defer vm.deinit();
@@ -68,7 +68,7 @@ pub const Luna = struct {
 
             var chunk = Chunk.init(self.allocator);
             defer chunk.deinit();
-            try chunk.compile(ast, line);
+            try chunk.compile(ast);
             chunk.debug();
 
             var vm = try Vm.init(self.allocator, chunk, &self.globals);
@@ -78,7 +78,7 @@ pub const Luna = struct {
             const elapsed: f64 = @floatFromInt(timer.read());
             vm.debugStack();
             vm.globals.debug();
-            try stdout.print("Took: " ++ Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
+            try stdout.print(Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
         }
     }
 };

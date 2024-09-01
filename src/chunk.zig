@@ -45,9 +45,9 @@ pub const Instruction = struct {
 };
 
 pub const Chunk = struct {
+    allocator: Allocator,
     bytecode: Array(u8),
     constants: Array(Value),
-    allocator: Allocator,
 
     pub const Error = error{
         ConstantPoolOverflow,
@@ -166,13 +166,29 @@ pub const Chunk = struct {
         while (i < bytes) i = self.debugInstruction(i);
     }
 
-    pub fn compile(self: *Chunk, root: *Node, source: []const u8) !void {
+    const Context = struct {
+        pub fn init() Context {
+            return Context{};
+        }
+
+        pub fn deinit(self: *Context) void {
+            _ = self;
+        }
+    };
+
+    pub fn compile(self: *Chunk, root: *Node) !void {
+        var context = Context.init();
+        defer context.deinit();
+        return self.compileInternal(root, &context);
+    }
+
+    pub fn compileInternal(self: *Chunk, root: *Node, context: *Context) !void {
         switch (root.tag) {
             .Program => {
                 const node = root.as.program;
                 const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
-                    try self.compile(statement, source);
+                    try self.compileInternal(statement, context);
                     if (statement != last) try self.pushOpCode(.POP);
                 }
                 try self.pushOpCode(.HALT);
@@ -185,20 +201,20 @@ pub const Chunk = struct {
                     return;
                 };
                 for (node.statements.items) |statement| {
-                    try self.compile(statement, source);
+                    try self.compileInternal(statement, context);
                     if (statement != last) try self.pushOpCode(.POP);
                 }
             },
             .Binary => {
                 const node = root.as.binary;
                 if (node.operator.tag == .Equal) {
-                    try self.compile(node.right, source);
+                    try self.compileInternal(node.right, context);
                     var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
                     try self.pushInstruction(.SETG, &identifier);
                     return;
                 }
-                try self.compile(node.left, source);
-                try self.compile(node.right, source);
+                try self.compileInternal(node.left, context);
+                try self.compileInternal(node.right, context);
                 switch (node.operator.tag) {
                     .Plus => try self.pushOpCode(.ADD),
                     .Minus => try self.pushOpCode(.SUB),
@@ -220,7 +236,7 @@ pub const Chunk = struct {
             },
             .Unary => {
                 const node = root.as.unary;
-                try self.compile(node.operand, source);
+                try self.compileInternal(node.operand, context);
                 switch (node.operator.tag) {
                     .Bang => try self.pushOpCode(.LNOT),
                     .Minus => try self.pushOpCode(.NEG),
