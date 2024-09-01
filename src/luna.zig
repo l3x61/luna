@@ -46,6 +46,7 @@ pub const Luna = struct {
         var vm = try Vm.init(self.allocator, chunk, &self.globals);
         defer vm.deinit();
         try vm.run();
+
         var result = vm.stack.peek() orelse return Vm.Errror.StackUnderflow;
         return result.clone();
     }
@@ -103,10 +104,10 @@ test "empty" {
     ;
     var expect = Value.initNull();
     defer expect.deinit();
-    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
 
-test "free leaked string" {
+test "free \"leaked\" string" {
     const source =
         \\a = "hello"
         \\a = "world"
@@ -114,7 +115,7 @@ test "free leaked string" {
     ;
     var expect = try Value.initObjectStringLiteral(std.testing.allocator, "!");
     defer expect.deinit();
-    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
 
 test "random expression" {
@@ -127,7 +128,7 @@ test "random expression" {
     ;
     var expect = Value.initNumber(1.5);
     defer expect.deinit();
-    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
 
 test "chain assign" {
@@ -138,7 +139,7 @@ test "chain assign" {
     ;
     var expect = Value.initNumber(1.5);
     defer expect.deinit();
-    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
 
 test "get global" {
@@ -150,5 +151,17 @@ test "get global" {
     ;
     var expect = Value.initNull();
     defer expect.deinit();
-    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name, source, expect));
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}
+
+test "set global in block" {
+    // if the scope doesnt have a local variable with the same name
+    // a global variable will be created
+    const source =
+        \\{ global_var = 1 }
+        \\global_var
+    ;
+    var expect = Value.initNumber(1.0);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
