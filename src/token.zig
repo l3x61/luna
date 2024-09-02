@@ -10,6 +10,7 @@ pub const Token = struct {
         Number,
         String,
         Identifier,
+        KeywordLet,
         KeywordNull,
         KeywordTrue,
         KeywordFalse,
@@ -63,11 +64,13 @@ pub const Token = struct {
 
     pub fn matchTags(self: Token, tags: []const Tag) bool {
         for (tags) |kind| {
-            if (self.matchTag(kind)) {
-                return true;
-            }
+            if (self.matchTag(kind)) return true;
         }
         return false;
+    }
+
+    pub fn compare(a: Token, b: Token) bool {
+        return a.tag == b.tag and std.mem.eql(u8, a.source, b.source) and std.mem.eql(u8, a.lexeme, b.lexeme);
     }
 
     pub fn showInSource(self: Token, color: []const u8) void {

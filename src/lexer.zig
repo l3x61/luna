@@ -187,7 +187,9 @@ pub const Lexer = struct {
             while (!self.isEndOfFile() and (self.isAlpha() or self.isDigit())) {
                 self.advance();
             }
-            if (std.mem.eql(u8, "null", self.source[start..self.cursor])) {
+            if (std.mem.eql(u8, "let", self.source[start..self.cursor])) {
+                return Token.init(.KeywordLet, self.source, self.source[start..self.cursor]);
+            } else if (std.mem.eql(u8, "null", self.source[start..self.cursor])) {
                 return Token.init(.KeywordNull, self.source, self.source[start..self.cursor]);
             } else if (std.mem.eql(u8, "true", self.source[start..self.cursor])) {
                 return Token.init(.KeywordTrue, self.source, self.source[start..self.cursor]);

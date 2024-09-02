@@ -67,7 +67,7 @@ pub const Luna = struct {
             var parser = Parser.init(self.allocator, line);
             var ast = parser.parse() catch continue :loop;
             defer ast.free(self.allocator);
-            try ast.debug(self.allocator, line);
+            try ast.debug(self.allocator);
 
             var chunk = Chunk.init(self.allocator);
             defer chunk.deinit();
@@ -162,6 +162,17 @@ test "set global in block" {
         \\global_var
     ;
     var expect = Value.initNumber(1.0);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}
+
+test "global variable declaration" {
+    const source =
+        \\let a = 123
+        \\let b = "hello"
+        \\a .. b
+    ;
+    var expect = try Value.initObjectStringLiteral(std.testing.allocator, "123hello");
     defer expect.deinit();
     try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }

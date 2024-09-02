@@ -34,9 +34,21 @@ pub const Parser = struct {
 
     fn parseStatement(self: *Parser) anyerror!*Node {
         switch (self.token.tag) {
+            .KeywordLet => return try self.parseVariableDeclaration(),
             .LeftBrace => return try self.parseBlock(),
             else => return try self.parseExpression(),
         }
+    }
+
+    pub fn parseVariableDeclaration(self: *Parser) !*Node {
+        _ = try self.eatTag(.KeywordLet);
+        const name = try self.eatTag(.Identifier);
+        var value: ?*Node = null;
+        if (self.token.tag == .Equal) {
+            _ = try self.eatTag(.Equal);
+            value = try self.parseExpression();
+        }
+        return Node.initVariableDeclarationNode(self.allocator, name, value);
     }
 
     pub fn parseBlock(self: *Parser) !*Node {

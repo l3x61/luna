@@ -15,6 +15,11 @@ const BlockNode = struct {
     statements: Array(*Node),
 };
 
+const VariableDeclarationNode = struct {
+    name: Token,
+    value: ?*Node,
+};
+
 const BinaryNode = struct {
     operator: Token,
     left: *Node,
@@ -36,6 +41,7 @@ pub const Node = struct {
 
     pub const Tag = enum {
         Program,
+        VariableDeclaration,
         Block,
         Binary,
         Unary,
@@ -48,6 +54,7 @@ pub const Node = struct {
 
     pub const Union = union {
         program: ProgramNode,
+        variable_declaration: VariableDeclarationNode,
         block: BlockNode,
         binary: BinaryNode,
         unary: UnaryNode,
@@ -58,6 +65,13 @@ pub const Node = struct {
         var node = try allocator.create(Node);
         node.tag = Node.Tag.Program;
         node.as = Union{ .program = ProgramNode{ .statements = Array(*Node).init(allocator) } };
+        return node;
+    }
+
+    pub fn initVariableDeclarationNode(allocator: Allocator, name: Token, value: ?*Node) !*Node {
+        var node = try allocator.create(Node);
+        node.tag = Node.Tag.VariableDeclaration;
+        node.as = Union{ .variable_declaration = VariableDeclarationNode{ .name = name, .value = value } };
         return node;
     }
 
@@ -96,6 +110,10 @@ pub const Node = struct {
                 self.as.program.statements.deinit();
                 allocator.destroy(self);
             },
+            .VariableDeclaration => {
+                if (self.as.variable_declaration.value) |value| value.free(allocator);
+                allocator.destroy(self);
+            },
             .Block => {
                 for (self.as.block.statements.items) |statement| statement.free(allocator);
                 self.as.block.statements.deinit();
@@ -116,13 +134,13 @@ pub const Node = struct {
         }
     }
 
-    pub fn debug(self: *Node, allocator: Allocator, source: []const u8) !void {
-        var buffer = String.init(allocator);
-        defer buffer.deinit();
-        try self.debugInternal(&buffer, source, true);
+    pub fn debug(self: *Node, allocator: Allocator) !void {
+        var prefix = String.init(allocator);
+        defer prefix.deinit();
+        try self.debugInternal(&prefix, true);
     }
 
-    fn debugInternal(self: *Node, prefix: *String, source: []const u8, is_last: bool) !void {
+    fn debugInternal(self: *Node, prefix: *String, is_last: bool) !void {
         std.debug.print(Ansi.Dim ++ "{s}", .{prefix.buffer});
         var _prefix = try prefix.clone();
         defer _prefix.deinit();
@@ -142,24 +160,28 @@ pub const Node = struct {
                 std.debug.print("Program\n", .{});
                 for (self.as.program.statements.items, 0..) |statement, index| {
                     const is_last_statement = index == self.as.program.statements.count() - 1;
-                    try statement.debugInternal(&_prefix, source, is_last_statement);
+                    try statement.debugInternal(&_prefix, is_last_statement);
                 }
+            },
+            .VariableDeclaration => {
+                std.debug.print("VariableDeclaration " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.variable_declaration.name.lexeme});
+                if (self.as.variable_declaration.value) |value| try value.debugInternal(&_prefix, true);
             },
             .Block => {
                 std.debug.print("Block\n", .{});
                 for (self.as.block.statements.items, 0..) |statement, index| {
                     const is_last_statement = index == self.as.block.statements.count() - 1;
-                    try statement.debugInternal(&_prefix, source, is_last_statement);
+                    try statement.debugInternal(&_prefix, is_last_statement);
                 }
             },
             .Binary => {
                 std.debug.print("Binary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.binary.operator.lexeme});
-                try self.as.binary.left.debugInternal(&_prefix, source, false);
-                try self.as.binary.right.debugInternal(&_prefix, source, true);
+                try self.as.binary.left.debugInternal(&_prefix, false);
+                try self.as.binary.right.debugInternal(&_prefix, true);
             },
             .Unary => {
                 std.debug.print("Unary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.unary.operator.lexeme});
-                try self.as.unary.operand.debugInternal(&_prefix, source, true);
+                try self.as.unary.operand.debugInternal(&_prefix, true);
             },
             .Primary => {
                 const operand = self.as.primary.operand;

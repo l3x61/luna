@@ -92,7 +92,7 @@ pub const Chunk = struct {
         try self.emitByte(@intCast(index));
     }
 
-    fn emitOpcodeConstant(self: *Chunk, opcode: OpCode, value: *Value) !void {
+    fn emitOpCodeConstant(self: *Chunk, opcode: OpCode, value: *Value) !void {
         try self.emitOpCode(opcode);
         try self.emitConstant(value);
     }
@@ -157,12 +157,28 @@ pub const Chunk = struct {
     }
 
     const Context = struct {
+        level: usize,
+
         pub fn init() Context {
-            return Context{};
+            return Context{
+                .level = 0,
+            };
         }
 
         pub fn deinit(self: *Context) void {
             _ = self;
+        }
+
+        pub fn enterScope(self: *Context) void {
+            self.level += 1;
+        }
+
+        pub fn leaveScope(self: *Context) void {
+            self.level -= 1;
+        }
+
+        pub fn isGlobalScope(self: *Context) bool {
+            return self.level == 0;
         }
     };
 
@@ -183,20 +199,35 @@ pub const Chunk = struct {
                 }
                 try self.emitOpCode(.HALT);
             },
+            .VariableDeclaration => {
+                const node = root.as.variable_declaration;
+                if (context.isGlobalScope()) {
+                    if (node.value) |value| {
+                        try self.compileInternal(value, context);
+                    } else {
+                        var value = Value.initNull();
+                        try self.emitConstant(&value);
+                    }
+                    var identifier = try Value.initObjectStringLiteral(self.allocator, node.name.lexeme);
+                    try self.emitOpCodeConstant(.SETG, &identifier);
+                }
+            },
             .Block => {
                 const node = root.as.block;
                 const last = node.statements.peek() orelse return;
+                context.enterScope();
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
                     if (statement != last) try self.emitOpCode(.POP); // TODO: only emit on expression statements
                 }
+                context.leaveScope();
             },
             .Binary => {
                 const node = root.as.binary;
                 if (node.operator.tag == .Equal) {
                     try self.compileInternal(node.right, context);
                     var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
-                    try self.emitOpcodeConstant(.SETG, &identifier);
+                    try self.emitOpCodeConstant(.SETG, &identifier);
                     return;
                 }
                 try self.compileInternal(node.left, context);
@@ -219,7 +250,7 @@ pub const Chunk = struct {
                     .Identifier => Value.initObjectStringLiteral(self.allocator, node.operand.lexeme),
                     else => unreachable,
                 };
-                try self.emitOpcodeConstant(
+                try self.emitOpCodeConstant(
                     if (node.operand.tag == .Identifier) .GETG else .PUSH,
                     &value,
                 );
