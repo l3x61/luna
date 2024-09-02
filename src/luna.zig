@@ -168,11 +168,12 @@ test "set global in block" {
 
 test "global variable declaration" {
     const source =
+        \\let uninit
         \\let a = 123
         \\let b = "hello"
-        \\a .. b
+        \\a .. b .. uninit
     ;
-    var expect = try Value.initObjectStringLiteral(std.testing.allocator, "123hello");
+    var expect = try Value.initObjectStringLiteral(std.testing.allocator, "123hellonull");
     defer expect.deinit();
     try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }

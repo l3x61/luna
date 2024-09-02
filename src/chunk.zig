@@ -206,7 +206,7 @@ pub const Chunk = struct {
                         try self.compileInternal(value, context);
                     } else {
                         var value = Value.initNull();
-                        try self.emitConstant(&value);
+                        try self.emitOpCodeConstant(.PUSH, &value);
                     }
                     var identifier = try Value.initObjectStringLiteral(self.allocator, node.name.lexeme);
                     try self.emitOpCodeConstant(.SETG, &identifier);
