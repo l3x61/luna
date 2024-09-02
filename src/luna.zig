@@ -47,7 +47,7 @@ pub const Luna = struct {
         defer vm.deinit();
         try vm.run();
 
-        var result = vm.stack.peek() orelse return Vm.Errror.StackUnderflow;
+        var result = vm.stack.peek() orelse return Value.initNull();
         return result.clone();
     }
 

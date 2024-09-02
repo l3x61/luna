@@ -31,7 +31,10 @@ const PrimaryNode = struct {
 };
 
 pub const Node = struct {
-    const Tag = enum {
+    tag: Tag,
+    as: Union,
+
+    pub const Tag = enum {
         Program,
         Block,
         Binary,
@@ -43,10 +46,7 @@ pub const Node = struct {
         }
     };
 
-    tag: Tag,
-    as: Union,
-
-    const Union = union {
+    pub const Union = union {
         program: ProgramNode,
         block: BlockNode,
         binary: BinaryNode,

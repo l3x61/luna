@@ -2,12 +2,14 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const Ansi = @import("ansi.zig");
+const Token = @import("token.zig").Token;
 const Node = @import("node.zig").Node;
 const Array = @import("array.zig").Array;
 const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 
 pub const OpCode = enum(u8) {
+    NOP,
     PUSH,
     POP,
     ADD,
@@ -67,15 +69,15 @@ pub const Chunk = struct {
         self.constants.deinit();
     }
 
-    fn pushByte(self: *Chunk, byte: u8) !void {
+    fn emitByte(self: *Chunk, byte: u8) !void {
         try self.bytecode.push(byte);
     }
 
-    fn pushOpCode(self: *Chunk, opCode: OpCode) !void {
-        try self.pushByte(@intFromEnum(opCode));
+    fn emitOpCode(self: *Chunk, opCode: OpCode) !void {
+        try self.emitByte(@intFromEnum(opCode));
     }
 
-    fn pushConstant(self: *Chunk, value: *Value) !void {
+    fn emitConstant(self: *Chunk, value: *Value) !void {
         var index: usize = undefined;
         if (self.constants.searchLinearIndex(value.*, Value.compare)) |found| {
             value.deinit();
@@ -85,26 +87,14 @@ pub const Chunk = struct {
             index = self.constants.count() - 1;
         }
         if (index > std.math.maxInt(u24)) return Error.ConstantPoolOverflow;
-        try self.pushOpCode(OpCode.PUSH);
-        try self.pushByte(@intCast(index >> 16));
-        try self.pushByte(@intCast(index >> 8));
-        try self.pushByte(@intCast(index));
+        try self.emitByte(@intCast(index >> 16));
+        try self.emitByte(@intCast(index >> 8));
+        try self.emitByte(@intCast(index));
     }
 
-    fn pushInstruction(self: *Chunk, opcode: OpCode, value: *Value) !void {
-        var index: usize = undefined;
-        if (self.constants.searchLinearIndex(value.*, Value.compare)) |found| {
-            value.deinit();
-            index = found;
-        } else {
-            try self.constants.push(value.*);
-            index = self.constants.count() - 1;
-        }
-        if (index > std.math.maxInt(u24)) return Error.ConstantPoolOverflow;
-        try self.pushOpCode(opcode);
-        try self.pushByte(@intCast(index >> 16));
-        try self.pushByte(@intCast(index >> 8));
-        try self.pushByte(@intCast(index));
+    fn emitOpcodeConstant(self: *Chunk, opcode: OpCode, value: *Value) !void {
+        try self.emitOpCode(opcode);
+        try self.emitConstant(value);
     }
 
     pub fn getInstruction(self: *Chunk, index: usize) Instruction {
@@ -136,7 +126,7 @@ pub const Chunk = struct {
     }
 
     pub fn getConstant(self: *Chunk, index: usize) Value {
-        return self.constants.get(index).?;
+        return self.constants.get(index) orelse unreachable;
     }
 
     pub fn debugInstruction(self: *Chunk, address: usize) usize {
@@ -186,28 +176,19 @@ pub const Chunk = struct {
         switch (root.tag) {
             .Program => {
                 const node = root.as.program;
-                const last = node.statements.peek() orelse {
-                    var value = Value.initNull();
-                    try self.pushConstant(&value);
-                    try self.pushOpCode(.HALT);
-                    return;
-                };
+                const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
-                    if (statement != last) try self.pushOpCode(.POP);
+                    if (statement != last) try self.emitOpCode(.POP);
                 }
-                try self.pushOpCode(.HALT);
+                try self.emitOpCode(.HALT);
             },
             .Block => {
                 const node = root.as.block;
-                const last = node.statements.peek() orelse {
-                    var value = Value.initNull();
-                    try self.pushConstant(&value);
-                    return;
-                };
+                const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
-                    if (statement != last) try self.pushOpCode(.POP);
+                    if (statement != last) try self.emitOpCode(.POP); // TODO: only emit on expression statements
                 }
             },
             .Binary => {
@@ -215,72 +196,64 @@ pub const Chunk = struct {
                 if (node.operator.tag == .Equal) {
                     try self.compileInternal(node.right, context);
                     var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
-                    try self.pushInstruction(.SETG, &identifier);
+                    try self.emitOpcodeConstant(.SETG, &identifier);
                     return;
                 }
                 try self.compileInternal(node.left, context);
                 try self.compileInternal(node.right, context);
-                switch (node.operator.tag) {
-                    .Plus => try self.pushOpCode(.ADD),
-                    .Minus => try self.pushOpCode(.SUB),
-                    .Star => try self.pushOpCode(.MUL),
-                    .StarStar => try self.pushOpCode(.POW),
-                    .Slash => try self.pushOpCode(.DIV),
-                    .Percent => try self.pushOpCode(.MOD),
-                    .DotDot => try self.pushOpCode(.CAT),
-                    .EqualEqual => try self.pushOpCode(.EQ),
-                    .BangEqual => try self.pushOpCode(.NEQ),
-                    .Less => try self.pushOpCode(.LT),
-                    .LessEqual => try self.pushOpCode(.LTEQ),
-                    .Greater => try self.pushOpCode(.GT),
-                    .GreaterEqual => try self.pushOpCode(.GTEQ),
-                    .PipePipe => try self.pushOpCode(.LOR),
-                    .AndAnd => try self.pushOpCode(.LAND),
-                    else => std.debug.panic("{s} not defined for binary node", .{node.operator.tag}),
-                }
+                try self.emitOpCode(getBinaryOpCode(node.operator.tag));
             },
             .Unary => {
                 const node = root.as.unary;
                 try self.compileInternal(node.operand, context);
-                switch (node.operator.tag) {
-                    .Bang => try self.pushOpCode(.LNOT),
-                    .Minus => try self.pushOpCode(.NEG),
-                    .Plus => return,
-                    else => std.debug.panic("{} not defined for unary node", .{node.operator.tag}),
-                }
+                try self.emitOpCode(getUnaryOpCode(node.operator.tag));
             },
             .Primary => {
                 const node = root.as.primary;
-                var value: Value = undefined;
-                switch (node.operand.tag) {
-                    .KeywordNull => {
-                        value = Value.initNull();
-                    },
-                    .KeywordTrue => {
-                        value = Value.initBoolean(true);
-                    },
-                    .KeywordFalse => {
-                        value = Value.initBoolean(false);
-                    },
-                    .Number => {
-                        const number = try std.fmt.parseFloat(f64, node.operand.lexeme);
-                        value = Value.initNumber(number);
-                    },
-                    .String => {
-                        const string = node.operand.stringLiteral();
-                        value = try Value.initObjectStringLiteral(self.allocator, string);
-                    },
-                    .Identifier => {
-                        var identifier = try Value.initObjectStringLiteral(self.allocator, node.operand.lexeme);
-                        try self.pushInstruction(.GETG, &identifier);
-                        return;
-                    },
-                    else => {
-                        std.debug.panic("{} not defined for primary node", .{node.operand.tag});
-                    },
-                }
-                try self.pushConstant(&value);
+                var value = try switch (node.operand.tag) {
+                    .KeywordNull => Value.initNull(),
+                    .KeywordTrue => Value.initBoolean(true),
+                    .KeywordFalse => Value.initBoolean(false),
+                    .Number => Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme)),
+                    .String => Value.initObjectStringLiteral(self.allocator, node.operand.stringLiteral()),
+                    .Identifier => Value.initObjectStringLiteral(self.allocator, node.operand.lexeme),
+                    else => unreachable,
+                };
+                try self.emitOpcodeConstant(
+                    if (node.operand.tag == .Identifier) .GETG else .PUSH,
+                    &value,
+                );
             },
         }
+    }
+
+    fn getBinaryOpCode(tag: Token.Tag) OpCode {
+        return switch (tag) {
+            .Plus => .ADD,
+            .Minus => .SUB,
+            .Star => .MUL,
+            .StarStar => .POW,
+            .Slash => .DIV,
+            .Percent => .MOD,
+            .DotDot => .CAT,
+            .EqualEqual => .EQ,
+            .BangEqual => .NEQ,
+            .Less => .LT,
+            .LessEqual => .LTEQ,
+            .Greater => .GT,
+            .GreaterEqual => .GTEQ,
+            .PipePipe => .LOR,
+            .AndAnd => .LAND,
+            else => unreachable,
+        };
+    }
+
+    fn getUnaryOpCode(tag: Token.Tag) OpCode {
+        return switch (tag) {
+            .Bang => .LNOT,
+            .Minus => .NEG,
+            .Plus => .NOP,
+            else => unreachable,
+        };
     }
 };

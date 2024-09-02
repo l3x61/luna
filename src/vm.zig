@@ -67,9 +67,8 @@ pub const Vm = struct {
             const instruction = self.chunk.getInstruction(self.ip);
             self.ip = instruction.next;
             switch (instruction.opcode) {
-                .PUSH => {
-                    try self.stackPush(self.chunk.getConstant(instruction.index));
-                },
+                .NOP => {},
+                .PUSH => try self.stackPush(self.chunk.getConstant(instruction.index)),
                 .POP => _ = try self.stackPop(),
                 .ADD => {
                     const right = try (try self.stackPop()).toNumber();
