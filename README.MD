@@ -47,8 +47,13 @@ program
     ;
 
 statement
-    : expression
+    : variable_declaration
     | block
+    | expression
+    ;
+
+variable_declaration
+    : 'let' IDENTIFIER ( '=' expression )?
     ;
 
 block
