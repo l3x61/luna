@@ -60,13 +60,22 @@ pub fn Array(comptime Type: type) type {
             if (index >= self.items.len) return null else return self.items.ptr[index];
         }
 
-        pub fn set(self: *Self, item: Type, index: usize) Error!void {
+        pub fn set(self: *Self, index: usize, item: Type) Error!void {
             if (index >= self.items.len) return Error.OutOfBounds;
             self.items.ptr[index] = item;
         }
 
         pub fn searchLinearIndex(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
             for (self.items, 0..) |current, index| if (compare(current, item)) return index;
+            return null;
+        }
+
+        pub fn searchLinearReverseIndex(self: *Self, item: Type, compare: fn (Type, Type) bool) ?usize {
+            var index: usize = self.items.len;
+            while (index > 0) {
+                index -= 1;
+                if (compare(self.items[index], item)) return index;
+            }
             return null;
         }
 

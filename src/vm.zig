@@ -169,6 +169,14 @@ pub const Vm = struct {
                     const value = self.globals.get(key);
                     try self.stackPush(if (value) |val| val else Value.initNull());
                 },
+                .SETL => {
+                    const value = self.stack.peek().?;
+                    try self.stack.set(instruction.index, value);
+                },
+                .GETL => {
+                    const value = self.stack.get(instruction.index).?;
+                    try self.stackPush(value);
+                },
                 .HALT => return,
             }
         }

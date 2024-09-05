@@ -177,3 +177,56 @@ test "global variable declaration" {
     defer expect.deinit();
     try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
 }
+
+test "assign local to global" {
+    const source =
+        \\{
+        \\    let l = 123
+        \\    g = l
+        \\}
+        \\g
+    ;
+    var expect = Value.initNumber(123);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}
+
+test "assign global to local" {
+    const source =
+        \\g = 'abc'
+        \\{
+        \\    let l = g
+        \\    l
+        \\}
+    ;
+    var expect = try Value.initObjectStringLiteral(std.testing.allocator, "abc");
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}
+
+test "assign local in vardecl" {
+    // since `l` doesnt exist at the time of the assignment
+    // a global `l` will be assigned to the local `l`
+    const source =
+        \\{
+        \\    let l = l
+        \\}
+    ;
+    var expect = Value.initNull();
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}
+
+test "chain assign local" {
+    const source =
+        \\{
+        \\    let a = 1
+        \\    let b = a = 2
+        \\    a+b
+        \\}
+        // { let a = 1 let b = a = 2 a + b }
+    ;
+    var expect = Value.initNumber(4);
+    defer expect.deinit();
+    try std.testing.expect(try testWrapper(std.testing.allocator, @src().fn_name[5..], source, expect));
+}

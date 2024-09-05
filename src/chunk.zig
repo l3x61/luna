@@ -32,6 +32,8 @@ pub const OpCode = enum(u8) {
     HALT,
     SETG,
     GETG,
+    SETL,
+    GETL,
 
     pub fn format(self: OpCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
@@ -53,6 +55,7 @@ pub const Chunk = struct {
 
     pub const Error = error{
         ConstantPoolOverflow,
+        InvalidAssignmentTarget,
     };
 
     pub fn init(allocator: Allocator) Chunk {
@@ -77,7 +80,7 @@ pub const Chunk = struct {
         try self.emitByte(@intFromEnum(opCode));
     }
 
-    fn emitConstant(self: *Chunk, value: *Value) !void {
+    fn addConstant(self: *Chunk, value: *Value) !void {
         var index: usize = undefined;
         if (self.constants.searchLinearIndex(value.*, Value.compare)) |found| {
             value.deinit();
@@ -94,7 +97,14 @@ pub const Chunk = struct {
 
     fn emitOpCodeConstant(self: *Chunk, opcode: OpCode, value: *Value) !void {
         try self.emitOpCode(opcode);
-        try self.emitConstant(value);
+        try self.addConstant(value);
+    }
+
+    fn emitOpCodeIndex(self: *Chunk, opcode: OpCode, index: usize) !void {
+        try self.emitOpCode(opcode);
+        try self.emitByte(@intCast(index >> 16));
+        try self.emitByte(@intCast(index >> 8));
+        try self.emitByte(@intCast(index));
     }
 
     pub fn getInstruction(self: *Chunk, index: usize) Instruction {
@@ -107,7 +117,12 @@ pub const Chunk = struct {
         }
         const opcode = @as(OpCode, @enumFromInt(self.bytecode.get(index).?));
         switch (opcode) {
-            .PUSH, .SETG, .GETG => {
+            .PUSH,
+            .SETG,
+            .GETG,
+            .SETL,
+            .GETL,
+            => {
                 const high: u24 = @as(u24, self.bytecode.get(index + 1).?) << 16;
                 const mid: u24 = @as(u24, self.bytecode.get(index + 2).?) << 8;
                 const low: u24 = self.bytecode.get(index + 3).?;
@@ -132,7 +147,10 @@ pub const Chunk = struct {
     pub fn debugInstruction(self: *Chunk, address: usize) usize {
         const instruction = self.getInstruction(address);
         switch (instruction.opcode) {
-            .PUSH, .SETG, .GETG => {
+            .PUSH,
+            .SETG,
+            .GETG,
+            => {
                 const value = self.getConstant(instruction.index);
                 std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "    ({s} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
                     address,
@@ -141,6 +159,17 @@ pub const Chunk = struct {
                     instruction.opcode,
                     value.tagName(),
                     value,
+                });
+            },
+            .SETL,
+            .GETL,
+            => {
+                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{} {d}\n" ++ Ansi.Reset, .{
+                    address,
+                    @as(u8, @intFromEnum(instruction.opcode)),
+                    instruction.index,
+                    instruction.opcode,
+                    instruction.index,
                 });
             },
             else => {
@@ -156,34 +185,86 @@ pub const Chunk = struct {
         while (i < bytes) i = self.debugInstruction(i);
     }
 
-    const Context = struct {
+    const Local = struct {
+        token: Token,
         level: usize,
 
-        pub fn init() Context {
+        const Uninizialized = std.math.maxInt(usize); // locals are limited to std.math.maxInt(u24)
+
+        pub fn init(token: Token, level: usize) Local {
+            return Local{ .token = token, .level = level };
+        }
+
+        /// WARNING: does not compare the level
+        pub fn compare(a: Local, b: Local) bool {
+            return std.mem.eql(u8, a.token.lexeme, b.token.lexeme);
+        }
+    };
+
+    const Context = struct {
+        locals: Array(Local),
+        level: usize,
+
+        const Error = error{
+            TooManyLocals,
+            LocalAlreadyDeclared,
+            LocalNotInitialized,
+            LocalNotDeclared,
+        };
+
+        pub fn init(allocator: Allocator) Context {
             return Context{
+                .locals = Array(Local).init(allocator),
                 .level = 0,
             };
         }
 
         pub fn deinit(self: *Context) void {
-            _ = self;
+            self.locals.deinit();
         }
 
         pub fn enterScope(self: *Context) void {
             self.level += 1;
         }
 
-        pub fn leaveScope(self: *Context) void {
+        pub fn leaveScope(self: *Context) usize {
+            var locals_in_scope: usize = 0;
+            while (self.locals.peek()) |local| {
+                if (local.level == self.level) _ = self.locals.pop() else break;
+                locals_in_scope += 1;
+            }
             self.level -= 1;
+            return locals_in_scope;
         }
 
         pub fn isGlobalScope(self: *Context) bool {
             return self.level == 0;
         }
+
+        pub fn declareLocal(self: *Context, token: Token) !usize {
+            if (self.locals.count() == std.math.maxInt(u24)) return Context.Error.TooManyLocals;
+            try self.locals.push(Local.init(token, Local.Uninizialized));
+            return self.locals.count() - 1;
+        }
+
+        pub fn resolveLocal(self: *Context, token: Token) !usize {
+            const index = self.locals.searchLinearReverseIndex(Local{ .token = token, .level = Local.Uninizialized }, Local.compare);
+            if (index) |i| {
+                if (self.locals.get(i).?.level == Local.Uninizialized) {
+                    return Context.Error.LocalNotDeclared;
+                }
+                return i;
+            }
+            return Context.Error.LocalNotDeclared;
+        }
+
+        pub fn markInitialized(self: *Context) void {
+            self.locals.items[self.locals.count() - 1].level = self.level;
+        }
     };
 
     pub fn compile(self: *Chunk, root: *Node) !void {
-        var context = Context.init();
+        var context = Context.init(self.allocator);
         defer context.deinit();
         return self.compileInternal(root, &context);
     }
@@ -210,6 +291,16 @@ pub const Chunk = struct {
                     }
                     var identifier = try Value.initObjectStringLiteral(self.allocator, node.name.lexeme);
                     try self.emitOpCodeConstant(.SETG, &identifier);
+                } else {
+                    const index = try context.declareLocal(node.name);
+                    if (node.value) |value| {
+                        try self.compileInternal(value, context);
+                    } else {
+                        var value = Value.initNull();
+                        try self.emitOpCodeConstant(.PUSH, &value);
+                    }
+                    try self.emitOpCodeIndex(.SETL, index);
+                    context.markInitialized();
                 }
             },
             .Block => {
@@ -218,17 +309,28 @@ pub const Chunk = struct {
                 context.enterScope();
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
-                    if (statement != last) try self.emitOpCode(.POP); // TODO: only emit on expression statements
+                    if (statement != last and statement.tag != .VariableDeclaration) try self.emitOpCode(.POP);
                 }
-                context.leaveScope();
+                for (context.leaveScope()) |_| {
+                    try self.emitOpCode(.POP);
+                }
             },
             .Binary => {
                 const node = root.as.binary;
                 if (node.operator.tag == .Equal) {
+                    if (node.left.tag != .Primary and node.left.as.primary.operand.tag == .Identifier) return Error.InvalidAssignmentTarget;
                     try self.compileInternal(node.right, context);
-                    var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
-                    try self.emitOpCodeConstant(.SETG, &identifier);
-                    return;
+                    if (context.isGlobalScope()) {
+                        var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
+                        try self.emitOpCodeConstant(.SETG, &identifier);
+                    } else {
+                        const index = context.resolveLocal(node.left.as.primary.operand) catch {
+                            var identifier = try Value.initObjectStringLiteral(self.allocator, node.left.as.primary.operand.lexeme);
+                            try self.emitOpCodeConstant(.SETG, &identifier);
+                            return;
+                        };
+                        try self.emitOpCodeIndex(.SETL, index);
+                    }
                 }
                 try self.compileInternal(node.left, context);
                 try self.compileInternal(node.right, context);
@@ -247,13 +349,24 @@ pub const Chunk = struct {
                     .KeywordFalse => Value.initBoolean(false),
                     .Number => Value.initNumber(try std.fmt.parseFloat(f64, node.operand.lexeme)),
                     .String => Value.initObjectStringLiteral(self.allocator, node.operand.stringLiteral()),
-                    .Identifier => Value.initObjectStringLiteral(self.allocator, node.operand.lexeme),
+                    .Identifier => {
+                        var identifier = try Value.initObjectStringLiteral(self.allocator, node.operand.lexeme);
+                        if (context.isGlobalScope()) {
+                            try self.emitOpCodeConstant(.GETG, &identifier);
+                            return;
+                        } else {
+                            const index = context.resolveLocal(node.operand) catch {
+                                try self.emitOpCodeConstant(.GETG, &identifier);
+                                return;
+                            };
+                            try self.emitOpCodeIndex(.GETL, index);
+                            identifier.deinit();
+                            return;
+                        }
+                    },
                     else => unreachable,
                 };
-                try self.emitOpCodeConstant(
-                    if (node.operand.tag == .Identifier) .GETG else .PUSH,
-                    &value,
-                );
+                try self.emitOpCodeConstant(.PUSH, &value);
             },
         }
     }
