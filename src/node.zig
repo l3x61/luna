@@ -20,6 +20,10 @@ const VariableDeclarationNode = struct {
     value: ?*Node,
 };
 
+const ExpressionNode = union {
+    expression: *Node,
+};
+
 const BinaryNode = struct {
     operator: Token,
     left: *Node,
@@ -41,8 +45,9 @@ pub const Node = struct {
 
     pub const Tag = enum {
         Program,
-        VariableDeclaration,
         Block,
+        VariableDeclaration,
+        Expression,
         Binary,
         Unary,
         Primary,
@@ -54,8 +59,9 @@ pub const Node = struct {
 
     pub const Union = union {
         program: ProgramNode,
-        variable_declaration: VariableDeclarationNode,
         block: BlockNode,
+        variable_declaration: VariableDeclarationNode,
+        expression: ExpressionNode,
         binary: BinaryNode,
         unary: UnaryNode,
         primary: PrimaryNode,
@@ -68,6 +74,13 @@ pub const Node = struct {
         return node;
     }
 
+    pub fn initBlockNode(allocator: Allocator) !*Node {
+        var node = try allocator.create(Node);
+        node.tag = Node.Tag.Block;
+        node.as = Union{ .block = BlockNode{ .statements = Array(*Node).init(allocator) } };
+        return node;
+    }
+
     pub fn initVariableDeclarationNode(allocator: Allocator, name: Token, value: ?*Node) !*Node {
         var node = try allocator.create(Node);
         node.tag = Node.Tag.VariableDeclaration;
@@ -75,10 +88,10 @@ pub const Node = struct {
         return node;
     }
 
-    pub fn initBlockNode(allocator: Allocator) !*Node {
+    pub fn initExpressionNode(allocator: Allocator, expression: *Node) !*Node {
         var node = try allocator.create(Node);
-        node.tag = Node.Tag.Block;
-        node.as = Union{ .block = BlockNode{ .statements = Array(*Node).init(allocator) } };
+        node.tag = Node.Tag.Expression;
+        node.as = Union{ .expression = ExpressionNode{ .expression = expression } };
         return node;
     }
 
@@ -110,13 +123,17 @@ pub const Node = struct {
                 self.as.program.statements.deinit();
                 allocator.destroy(self);
             },
+            .Block => {
+                for (self.as.block.statements.items) |statement| statement.deinit(allocator);
+                self.as.block.statements.deinit();
+                allocator.destroy(self);
+            },
             .VariableDeclaration => {
                 if (self.as.variable_declaration.value) |value| value.deinit(allocator);
                 allocator.destroy(self);
             },
-            .Block => {
-                for (self.as.block.statements.items) |statement| statement.deinit(allocator);
-                self.as.block.statements.deinit();
+            .Expression => {
+                self.as.expression.expression.deinit(allocator);
                 allocator.destroy(self);
             },
             .Binary => {
@@ -163,16 +180,20 @@ pub const Node = struct {
                     try statement.debugInternal(&_prefix, is_last_statement);
                 }
             },
-            .VariableDeclaration => {
-                std.debug.print("VariableDeclaration " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.variable_declaration.name.lexeme});
-                if (self.as.variable_declaration.value) |value| try value.debugInternal(&_prefix, true);
-            },
             .Block => {
                 std.debug.print("Block\n", .{});
                 for (self.as.block.statements.items, 0..) |statement, index| {
                     const is_last_statement = index == self.as.block.statements.count() - 1;
                     try statement.debugInternal(&_prefix, is_last_statement);
                 }
+            },
+            .VariableDeclaration => {
+                std.debug.print("VariableDeclaration " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.variable_declaration.name.lexeme});
+                if (self.as.variable_declaration.value) |value| try value.debugInternal(&_prefix, true);
+            },
+            .Expression => {
+                std.debug.print("Expression\n", .{});
+                try self.as.expression.expression.debugInternal(&_prefix, true);
             },
             .Binary => {
                 std.debug.print("Binary " ++ Ansi.Magenta ++ "{s}\n" ++ Ansi.Reset, .{self.as.binary.operator.lexeme});

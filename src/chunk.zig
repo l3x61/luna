@@ -262,12 +262,20 @@ pub const Chunk = struct {
         switch (root.tag) {
             .Program => {
                 const node = root.as.program;
-                const last = node.statements.peek() orelse return;
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
-                    if (statement != last) try self.emitOpCode(.POP);
+                    if (statement.tag == .Expression) try self.emitOpCode(.POP);
                 }
                 try self.emitOpCode(.HALT);
+            },
+            .Block => {
+                const node = root.as.block;
+                context.enterScope();
+                for (node.statements.items) |statement| {
+                    try self.compileInternal(statement, context);
+                    if (statement.tag == .Expression) try self.emitOpCode(.POP);
+                }
+                try self.emitOpCodeIndex(.POPN, context.leaveScope());
             },
             .VariableDeclaration => {
                 const node = root.as.variable_declaration;
@@ -292,14 +300,9 @@ pub const Chunk = struct {
                     context.markInitialized();
                 }
             },
-            .Block => {
-                const node = root.as.block;
-                context.enterScope();
-                for (node.statements.items) |statement| {
-                    try self.compileInternal(statement, context);
-                    if (statement.tag != .VariableDeclaration and statement.tag != .Block) try self.emitOpCode(.POP);
-                }
-                try self.emitOpCodeIndex(.POPN, context.leaveScope());
+            .Expression => {
+                const node = root.as.expression;
+                try self.compileInternal(node.expression, context);
             },
             .Binary => {
                 const node = root.as.binary;

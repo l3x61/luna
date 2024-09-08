@@ -61,7 +61,7 @@ pub const Parser = struct {
     }
 
     fn parseExpression(self: *Parser) !*Node {
-        return try self.parseAssignmentExpression();
+        return Node.initExpressionNode(self.allocator, try self.parseAssignmentExpression());
     }
 
     fn parseAssignmentExpression(self: *Parser) !*Node {
