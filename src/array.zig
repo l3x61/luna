@@ -14,6 +14,7 @@ pub fn Array(comptime Type: type) type {
         pub const Error = error{
             OutOfMemory,
             OutOfBounds,
+            Underflow,
         };
 
         pub fn init(allocator: Allocator) Self {
@@ -54,6 +55,11 @@ pub fn Array(comptime Type: type) type {
             if (self.items.len == 0) return null;
             self.items.len -= 1;
             return self.items.ptr[self.items.len];
+        }
+
+        pub fn popN(self: *Self, n: usize) !void {
+            if (self.items.len == 0 and n > 0 or self.items.len -% n > self.items.len) return Error.Underflow;
+            self.items.len -= n;
         }
 
         pub fn set(self: *Self, index: usize, item: Type) Error!void {

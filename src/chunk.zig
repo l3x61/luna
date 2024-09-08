@@ -12,6 +12,7 @@ pub const OpCode = enum(u8) {
     NOP,
     PUSH,
     POP,
+    POPN,
     ADD,
     SUB,
     MUL,
@@ -117,7 +118,7 @@ pub const Chunk = struct {
         }
         const opcode = @as(OpCode, @enumFromInt(self.bytecode.get(index).?));
         switch (opcode) {
-            .PUSH, .SETG, .GETG, .SETL, .GETL => {
+            .PUSH, .SETG, .GETG, .SETL, .GETL, .POPN => {
                 const high: u24 = @as(u24, self.bytecode.get(index + 1).?) << 16;
                 const mid: u24 = @as(u24, self.bytecode.get(index + 2).?) << 8;
                 const low: u24 = self.bytecode.get(index + 3).?;
@@ -153,7 +154,7 @@ pub const Chunk = struct {
                     value,
                 });
             },
-            .SETL, .GETL => {
+            .SETL, .GETL, .POPN => {
                 std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{} {d}\n" ++ Ansi.Reset, .{
                     address,
                     @as(u8, @intFromEnum(instruction.opcode)),
@@ -298,7 +299,7 @@ pub const Chunk = struct {
                     try self.compileInternal(statement, context);
                     if (statement.tag != .VariableDeclaration and statement.tag != .Block) try self.emitOpCode(.POP);
                 }
-                for (context.leaveScope()) |_| try self.emitOpCode(.POP);
+                try self.emitOpCodeIndex(.POPN, context.leaveScope());
             },
             .Binary => {
                 const node = root.as.binary;
