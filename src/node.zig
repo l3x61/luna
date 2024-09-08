@@ -103,29 +103,29 @@ pub const Node = struct {
         return node;
     }
 
-    pub fn free(self: *Node, allocator: Allocator) void {
+    pub fn deinit(self: *Node, allocator: Allocator) void {
         switch (self.tag) {
             .Program => {
-                for (self.as.program.statements.items) |statement| statement.free(allocator);
+                for (self.as.program.statements.items) |statement| statement.deinit(allocator);
                 self.as.program.statements.deinit();
                 allocator.destroy(self);
             },
             .VariableDeclaration => {
-                if (self.as.variable_declaration.value) |value| value.free(allocator);
+                if (self.as.variable_declaration.value) |value| value.deinit(allocator);
                 allocator.destroy(self);
             },
             .Block => {
-                for (self.as.block.statements.items) |statement| statement.free(allocator);
+                for (self.as.block.statements.items) |statement| statement.deinit(allocator);
                 self.as.block.statements.deinit();
                 allocator.destroy(self);
             },
             .Binary => {
-                self.as.binary.left.free(allocator);
-                self.as.binary.right.free(allocator);
+                self.as.binary.left.deinit(allocator);
+                self.as.binary.right.deinit(allocator);
                 allocator.destroy(self);
             },
             .Unary => {
-                self.as.unary.operand.free(allocator);
+                self.as.unary.operand.deinit(allocator);
                 allocator.destroy(self);
             },
             .Primary => {

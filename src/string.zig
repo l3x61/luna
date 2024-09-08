@@ -93,31 +93,3 @@ pub const String = struct {
         self.buffer.len = old_length;
     }
 };
-
-//test "string: init/deinit" {
-//    const allocator = std.testing.allocator;
-//    var string = String.init(allocator);
-//    string.deinit();
-//}
-//
-//test "string: push" {
-//    const allocator = std.testing.allocator;
-//    var string = String.init(allocator);
-//    defer string.deinit();
-//
-//    _ = try string.appendLiteral("Hello");
-//    _ = try string.appendLiteral(" ");
-//    _ = try string.appendLiteral("World\n");
-//
-//    std.debug.print("{s}", .{string.buffer});
-//}
-//
-//test "string: print" {
-//    const allocator = std.testing.allocator;
-//    var string = String.init(allocator);
-//    defer string.deinit();
-//
-//    _ = try string.appendPrint("Hello, {s} {d}!\n", .{ "World", 3.1415 });
-//
-//    std.debug.print("{s}", .{string.buffer});
-//}

@@ -17,7 +17,7 @@ pub const Parser = struct {
 
     pub fn init(allocator: Allocator, source: []const u8) Parser {
         var lexer = Lexer.init(source);
-        const token = lexer.next();
+        const token = lexer.nextToken();
         return Parser{ .allocator = allocator, .lexer = lexer, .token = token };
     }
 
@@ -27,7 +27,7 @@ pub const Parser = struct {
 
     pub fn parseProgram(self: *Parser) !*Node {
         const node = try Node.initProgramNode(self.allocator);
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.tag != Token.Tag.EndOfFile) try node.as.program.statements.push(try self.parseStatement());
         return node;
     }
@@ -41,11 +41,11 @@ pub const Parser = struct {
     }
 
     pub fn parseVariableDeclaration(self: *Parser) !*Node {
-        _ = try self.eatTag(.KeywordLet);
-        const name = try self.eatTag(.Identifier);
+        _ = try self.eatToken(.KeywordLet);
+        const name = try self.eatToken(.Identifier);
         var value: ?*Node = null;
         if (self.token.tag == .Equal) {
-            _ = try self.eatTag(.Equal);
+            _ = try self.eatToken(.Equal);
             value = try self.parseExpression();
         }
         return Node.initVariableDeclarationNode(self.allocator, name, value);
@@ -53,10 +53,10 @@ pub const Parser = struct {
 
     pub fn parseBlock(self: *Parser) !*Node {
         const node = try Node.initBlockNode(self.allocator);
-        errdefer node.free(self.allocator);
-        _ = try self.eatTag(.LeftBrace);
+        errdefer node.deinit(self.allocator);
+        _ = try self.eatToken(.LeftBrace);
         while (self.token.tag != Token.Tag.RightBrace) try node.as.block.statements.push(try self.parseStatement());
-        _ = try self.eatTag(.RightBrace);
+        _ = try self.eatToken(.RightBrace);
         return node;
     }
 
@@ -66,12 +66,12 @@ pub const Parser = struct {
 
     fn parseAssignmentExpression(self: *Parser) !*Node {
         var node = try self.parseLogicalOrExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         if (self.token.matchTag(.Equal)) {
             const left = node;
-            const operator = try self.eatTag(.Equal);
+            const operator = try self.eatToken(.Equal);
             const right = try self.parseAssignmentExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, left, operator, right);
         }
         return node;
@@ -79,11 +79,11 @@ pub const Parser = struct {
 
     fn parseLogicalOrExpression(self: *Parser) !*Node {
         var node = try self.parseLogicalAndExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTag(.PipePipe)) {
-            const operator = try self.eatTag(.PipePipe);
+            const operator = try self.eatToken(.PipePipe);
             const right = try self.parseLogicalAndExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -91,11 +91,11 @@ pub const Parser = struct {
 
     fn parseLogicalAndExpression(self: *Parser) !*Node {
         var node = try self.parseEqualityExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTag(.AndAnd)) {
-            const operator = try self.eatTag(.AndAnd);
+            const operator = try self.eatToken(.AndAnd);
             const right = try self.parseEqualityExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -103,11 +103,11 @@ pub const Parser = struct {
 
     fn parseEqualityExpression(self: *Parser) !*Node {
         var node = try self.parseRelationalExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTags(EqualityTokenTags)) {
-            const operator = try self.eatTags(EqualityTokenTags);
+            const operator = try self.eatTokens(EqualityTokenTags);
             const right = try self.parseRelationalExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -115,11 +115,11 @@ pub const Parser = struct {
 
     fn parseRelationalExpression(self: *Parser) !*Node {
         var node = try self.parseConcatenativeExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTags(RelationalTokenTags)) {
-            const operator = try self.eatTags(RelationalTokenTags);
+            const operator = try self.eatTokens(RelationalTokenTags);
             const right = try self.parseConcatenativeExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -127,11 +127,11 @@ pub const Parser = struct {
 
     fn parseConcatenativeExpression(self: *Parser) !*Node {
         var node = try self.parseAdditiveExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTag(.DotDot)) {
-            const operator = try self.eatTag(.DotDot);
+            const operator = try self.eatToken(.DotDot);
             const right = try self.parseAdditiveExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -139,11 +139,11 @@ pub const Parser = struct {
 
     fn parseAdditiveExpression(self: *Parser) !*Node {
         var node = try self.parseMultiplicativeExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTags(AdditiveTokenTags)) {
-            const operator = try self.eatTags(AdditiveTokenTags);
+            const operator = try self.eatTokens(AdditiveTokenTags);
             const right = try self.parseMultiplicativeExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -151,11 +151,11 @@ pub const Parser = struct {
 
     fn parseMultiplicativeExpression(self: *Parser) !*Node {
         var node = try self.parsePowerExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         while (self.token.matchTags(MultiplicativeTokenTags)) {
-            const operator = try self.eatTags(MultiplicativeTokenTags);
+            const operator = try self.eatTokens(MultiplicativeTokenTags);
             const right = try self.parsePowerExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, node, operator, right);
         }
         return node;
@@ -163,12 +163,12 @@ pub const Parser = struct {
 
     fn parsePowerExpression(self: *Parser) !*Node {
         var node = try self.parseUnaryExpression();
-        errdefer node.free(self.allocator);
+        errdefer node.deinit(self.allocator);
         if (self.token.matchTag(.StarStar)) {
             const left = node;
-            const operator = try self.eatTag(.StarStar);
+            const operator = try self.eatToken(.StarStar);
             const right = try self.parsePowerExpression();
-            errdefer right.free(self.allocator);
+            errdefer right.deinit(self.allocator);
             node = try Node.initBinaryNode(self.allocator, left, operator, right);
         }
         return node;
@@ -176,9 +176,9 @@ pub const Parser = struct {
 
     fn parseUnaryExpression(self: *Parser) !*Node {
         if (self.token.matchTags(UnaryTokenTags)) {
-            const operator = try self.eatTags(UnaryTokenTags);
+            const operator = try self.eatTokens(UnaryTokenTags);
             const operand = try self.parsePrimaryExpression();
-            errdefer operand.free(self.allocator);
+            errdefer operand.deinit(self.allocator);
             return Node.initUnaryNode(self.allocator, operator, operand);
         }
         return self.parsePrimaryExpression();
@@ -188,26 +188,26 @@ pub const Parser = struct {
         switch (self.token.tag) {
             .LeftParenthesis => return try self.parseGroupingExpression(),
             else => {
-                const operand = try self.eatTags(PrimaryTokenTags);
+                const operand = try self.eatTokens(PrimaryTokenTags);
                 return try Node.initPrimaryNode(self.allocator, operand);
             },
         }
     }
 
     fn parseGroupingExpression(self: *Parser) anyerror!*Node {
-        _ = try self.eatTag(.LeftParenthesis);
+        _ = try self.eatToken(.LeftParenthesis);
         const node = try self.parseExpression();
-        _ = try self.eatTag(.RightParenthesis);
+        _ = try self.eatToken(.RightParenthesis);
         return node;
     }
 
-    fn eatTag(self: *Parser, expected: Token.Tag) !Token {
-        return self.eatTags(&[_]Token.Tag{expected});
+    fn eatToken(self: *Parser, expected: Token.Tag) !Token {
+        return self.eatTokens(&[_]Token.Tag{expected});
     }
 
-    fn eatTags(self: *Parser, expected: []const Token.Tag) !Token {
+    fn eatTokens(self: *Parser, expected: []const Token.Tag) !Token {
         const token = self.token;
-        self.token = self.lexer.next();
+        self.token = self.lexer.nextToken();
         if (token.matchTags(expected)) {
             return token;
         } else {

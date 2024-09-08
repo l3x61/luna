@@ -37,7 +37,7 @@ pub const Luna = struct {
     pub fn runSource(self: *Luna, source: []const u8) !Value {
         var parser = Parser.init(self.allocator, source);
         var ast = try parser.parse();
-        defer ast.free(self.allocator);
+        defer ast.deinit(self.allocator);
 
         var chunk = Chunk.init(self.allocator);
         defer chunk.deinit();
@@ -66,7 +66,7 @@ pub const Luna = struct {
 
             var parser = Parser.init(self.allocator, line);
             var ast = parser.parse() catch continue :loop;
-            defer ast.free(self.allocator);
+            defer ast.deinit(self.allocator);
             try ast.debug(self.allocator);
 
             var chunk = Chunk.init(self.allocator);

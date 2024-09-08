@@ -104,24 +104,3 @@ pub const Table = struct {
         self.entries = new_entries;
     }
 };
-
-//test "table: in/deinit" {
-//    const allocator = std.testing.allocator;
-//    var table = Table.init(allocator);
-//    table.deinit();
-//}
-//
-//test "table: in/deinit set get remove" {
-//    const allocator = std.testing.allocator;
-//    var table = Table.init(allocator);
-//    defer table.deinit();
-//
-//    try std.testing.expect(try table.set(Value.initNull(), Value.initNumber(1.0)) == true);
-//    try std.testing.expect(try table.set(Value.initNull(), Value.initNumber(1.0)) == false);
-//
-//    const val = table.get(Value.initNull());
-//    try std.testing.expect(Value.compare(val.?, Value.initNumber(1.0)));
-//
-//    try std.testing.expect(table.remove(Value.initNull()) == true);
-//    try std.testing.expect(table.remove(Value.initNull()) == false);
-//}

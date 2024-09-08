@@ -93,9 +93,3 @@ pub const Token = struct {
         std.debug.print(Ansi.Yellow ++ "{[e]s: >4}" ++ Ansi.Reset ++ " | {[e]s: >[before]}{[color]s}{[e]s:~>[token]}" ++ Ansi.Reset ++ "{[e]s: >[after]}\n", .{ .e = "", .before = before_lexeme.len, .token = if (self.lexeme.len == 0) 1 else self.lexeme.len, .after = after_lexeme.len, .color = color });
     }
 };
-
-//test "show in source" {
-//    const source = "test'Hello World'test";
-//    const token = Token.init(Token.Tag.String, source, source[4..13]);
-//    token.showInSource(Ansi.Magenta);
-//}

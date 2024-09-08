@@ -117,12 +117,7 @@ pub const Chunk = struct {
         }
         const opcode = @as(OpCode, @enumFromInt(self.bytecode.get(index).?));
         switch (opcode) {
-            .PUSH,
-            .SETG,
-            .GETG,
-            .SETL,
-            .GETL,
-            => {
+            .PUSH, .SETG, .GETG, .SETL, .GETL => {
                 const high: u24 = @as(u24, self.bytecode.get(index + 1).?) << 16;
                 const mid: u24 = @as(u24, self.bytecode.get(index + 2).?) << 8;
                 const low: u24 = self.bytecode.get(index + 3).?;
@@ -147,10 +142,7 @@ pub const Chunk = struct {
     pub fn debugInstruction(self: *Chunk, address: usize) usize {
         const instruction = self.getInstruction(address);
         switch (instruction.opcode) {
-            .PUSH,
-            .SETG,
-            .GETG,
-            => {
+            .PUSH, .SETG, .GETG => {
                 const value = self.getConstant(instruction.index);
                 std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "    ({s} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
                     address,
@@ -161,9 +153,7 @@ pub const Chunk = struct {
                     value,
                 });
             },
-            .SETL,
-            .GETL,
-            => {
+            .SETL, .GETL => {
                 std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{} {d}\n" ++ Ansi.Reset, .{
                     address,
                     @as(u8, @intFromEnum(instruction.opcode)),
@@ -250,9 +240,7 @@ pub const Chunk = struct {
         pub fn resolveLocal(self: *Context, token: Token) !usize {
             const index = self.locals.searchLinearReverseIndex(Local{ .token = token, .level = Local.Uninizialized }, Local.compare);
             if (index) |i| {
-                if (self.locals.get(i).?.level == Local.Uninizialized) {
-                    return Context.Error.LocalNotDeclared;
-                }
+                if (self.locals.get(i).?.level == Local.Uninizialized) return Context.Error.LocalNotDeclared;
                 return i;
             }
             return Context.Error.LocalNotDeclared;
@@ -331,6 +319,7 @@ pub const Chunk = struct {
                         };
                         try self.emitOpCodeIndex(.SETL, index);
                     }
+                    return;
                 }
                 try self.compileInternal(node.left, context);
                 try self.compileInternal(node.right, context);
@@ -388,7 +377,7 @@ pub const Chunk = struct {
             .GreaterEqual => .GTEQ,
             .PipePipe => .LOR,
             .AndAnd => .LAND,
-            else => unreachable,
+            else => std.debug.panic("{s}: {s}\n", .{ @src().fn_name, tag }),
         };
     }
 

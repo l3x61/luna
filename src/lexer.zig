@@ -43,14 +43,14 @@ pub const Lexer = struct {
         return c >= 'a' and c <= 'z' or c >= 'A' and c <= 'Z' or c == '_';
     }
 
-    pub fn next(self: *Lexer) Token {
+    pub fn nextToken(self: *Lexer) Token {
         if (self.isEndOfFile()) {
             return Token.init(.EndOfFile, self.source, self.source[self.cursor..self.cursor]);
         }
 
         if (self.isWhitespace()) {
             self.skipWhitespace();
-            return self.next();
+            return self.nextToken();
         }
 
         const c = self.char();
@@ -59,7 +59,7 @@ pub const Lexer = struct {
             while (!self.isEndOfFile() and self.char() != '\n') {
                 self.advance();
             }
-            return self.next();
+            return self.nextToken();
         }
 
         if (c == '+') {

@@ -105,7 +105,7 @@ multiplicative
     ;
 
 power
-    :  unary ( '**'  power )*
+    : unary ( '**'  power )*
     ;
 
 unary

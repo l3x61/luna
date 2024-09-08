@@ -185,9 +185,7 @@ pub const Vm = struct {
     pub fn debugStack(self: *Vm) void {
         std.debug.print("Stack: ", .{});
         for (self.stack.items, 0..) |item, i| {
-            if (i != 0) {
-                std.debug.print(", ", .{});
-            }
+            if (i != 0) std.debug.print(", ", .{});
             std.debug.print(Ansi.Cyan ++ "{}" ++ Ansi.Reset, .{item});
         }
         std.debug.print("{s}", .{if (self.stack.count() == 0) "> EMPTY <\n" else " <- TOP\n"});
