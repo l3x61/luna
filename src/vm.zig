@@ -64,6 +64,8 @@ pub const Vm = struct {
 
     pub fn run(self: *Vm) !void {
         while (true) {
+            std.debug.print(Ansi.Dim ++ "================================================================================\n" ++ Ansi.Reset, .{});
+            _ = self.chunk.debugInstruction(self.ip);
             const instruction = self.chunk.getInstruction(self.ip);
             self.ip = instruction.next;
             switch (instruction.opcode) {
@@ -179,6 +181,7 @@ pub const Vm = struct {
                 },
                 .HALT => return,
             }
+            self.debugStack();
         }
     }
 

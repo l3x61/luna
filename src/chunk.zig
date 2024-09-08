@@ -144,7 +144,7 @@ pub const Chunk = struct {
         switch (instruction.opcode) {
             .PUSH, .SETG, .GETG => {
                 const value = self.getConstant(instruction.index);
-                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "    ({s} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
+                std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{}" ++ Ansi.Reset ++ "    ({s} " ++ Ansi.Cyan ++ "{}" ++ Ansi.Reset ++ ")\n" ++ Ansi.Reset, .{
                     address,
                     @as(u8, @intFromEnum(instruction.opcode)),
                     instruction.index,
@@ -154,7 +154,7 @@ pub const Chunk = struct {
                 });
             },
             .SETL, .GETL => {
-                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{} {d}\n" ++ Ansi.Reset, .{
+                std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2} {x:0>6}    " ++ Ansi.Reset ++ Ansi.Bold ++ "{} {d}\n" ++ Ansi.Reset, .{
                     address,
                     @as(u8, @intFromEnum(instruction.opcode)),
                     instruction.index,
@@ -163,7 +163,7 @@ pub const Chunk = struct {
                 });
             },
             else => {
-                std.debug.print(Ansi.Cyan ++ "{x:0>8}" ++ Ansi.Reset ++ ": " ++ Ansi.Dim ++ "{x:0>2}           " ++ Ansi.Reset ++ Ansi.Bold ++ "{}\n" ++ Ansi.Reset, .{ address, self.bytecode.get(address).?, instruction.opcode });
+                std.debug.print("{x:0>8}: " ++ Ansi.Dim ++ "{x:0>2}           " ++ Ansi.Reset ++ Ansi.Bold ++ "{}\n" ++ Ansi.Reset, .{ address, self.bytecode.get(address).?, instruction.opcode });
             },
         }
         return instruction.next;
@@ -293,15 +293,12 @@ pub const Chunk = struct {
             },
             .Block => {
                 const node = root.as.block;
-                const last = node.statements.peek() orelse return;
                 context.enterScope();
                 for (node.statements.items) |statement| {
                     try self.compileInternal(statement, context);
-                    if (statement != last and statement.tag != .VariableDeclaration) try self.emitOpCode(.POP);
+                    if (statement.tag != .VariableDeclaration and statement.tag != .Block) try self.emitOpCode(.POP);
                 }
-                for (context.leaveScope()) |_| {
-                    try self.emitOpCode(.POP);
-                }
+                for (context.leaveScope()) |_| try self.emitOpCode(.POP);
             },
             .Binary => {
                 const node = root.as.binary;
