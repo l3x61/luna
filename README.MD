@@ -118,6 +118,9 @@ primary
     ;
 ```
 
+## Dependencies
+* [GNU Readline](https://tiswww.cwru.edu/php/chet/readline/rltop.html)
+
 ## Resources
 * [Writing an Interpreter/Compiler in Go](https://interpreterbook.com/)
 * [Crafting Interpreters](https://craftinginterpreters.com/)

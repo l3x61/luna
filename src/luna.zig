@@ -12,6 +12,7 @@ const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
 const Table = @import("table.zig").Table;
 
+const c = @import("c.zig");
 const SipHash = @import("siphash.zig");
 
 pub const Luna = struct {
@@ -48,16 +49,15 @@ pub const Luna = struct {
     }
 
     pub fn repl(self: *Luna) !void {
-        const stdin = std.io.getStdIn().reader();
         const stdout = std.io.getStdOut().writer();
+        defer c.clear_history();
 
         loop: while (true) {
-            try stdout.print("> ", .{});
-
-            var buffer: [1024]u8 = undefined;
-            var line = try stdin.readUntilDelimiter(&buffer, '\n');
-            if (builtin.os.tag == .windows and line[line.len - 1] == '\r') line.len -= 1;
-            //if (line.len == 0) continue :loop;
+            const c_line = c.readline("> ");
+            defer c.free(c_line);
+            const line = std.mem.span(c_line);
+            if (line.len == 0) continue :loop;
+            c.add_history(c_line);
             if (std.mem.eql(u8, line, "exit")) break :loop;
 
             var parser = Parser.init(self.allocator, line);
