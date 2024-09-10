@@ -28,6 +28,10 @@ pub const Table = struct {
 
     pub fn deinit(self: *Table) void {
         if (self.entries.len == 0) return;
+        for (self.entries) |*entry| {
+            if (entry.key) |*key| key.deinit();
+            if (entry.value) |*value| value.deinit();
+        }
         self.allocator.free(self.entries.ptr[0..self.entries.len]);
         self.entries = &.{};
         self.count = 0;

@@ -27,10 +27,6 @@ pub const Luna = struct {
     }
 
     pub fn deinit(self: *Luna) void {
-        for (self.globals.entries) |*entry| {
-            if (entry.key) |*key| key.deinit();
-            if (entry.value) |*value| value.deinit();
-        }
         self.globals.deinit();
     }
 

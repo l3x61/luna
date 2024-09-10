@@ -5,10 +5,8 @@ const Luna = @import("luna.zig").Luna;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer if (gpa.deinit() == .leak) std.debug.print("MEMORY LEAK", .{});
-    const allocator = gpa.allocator();
-
-    var luna = Luna.init(allocator);
+    defer _ = gpa.deinit();
+    var luna = Luna.init(gpa.allocator());
     defer luna.deinit();
     try luna.repl();
 }
