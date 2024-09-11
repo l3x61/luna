@@ -1,7 +1,7 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const Allocator = std.mem.Allocator;
 
-const builtin = @import("builtin");
 const Ansi = @import("ansi.zig");
 const Token = @import("token.zig").Token;
 const Lexer = @import("lexer.zig").Lexer;
@@ -11,9 +11,8 @@ const Value = @import("value.zig").Value;
 const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
 const Table = @import("table.zig").Table;
-
-const c = @import("c.zig");
 const SipHash = @import("siphash.zig");
+const utils = @import("utils.zig");
 
 pub const Luna = struct {
     allocator: Allocator,
@@ -50,14 +49,11 @@ pub const Luna = struct {
 
     pub fn repl(self: *Luna) !void {
         const stdout = std.io.getStdOut().writer();
-        defer c.clear_history();
-
         loop: while (true) {
-            const c_line = c.readline("> ");
-            defer c.free(c_line);
-            const line = std.mem.span(c_line);
+            const line = try utils.readLine(self.allocator, "> ");
+            defer self.allocator.free(line);
+
             if (line.len == 0) continue :loop;
-            c.add_history(c_line);
             if (std.mem.eql(u8, line, "exit")) break :loop;
 
             var parser = Parser.init(self.allocator, line);

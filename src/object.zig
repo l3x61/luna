@@ -2,9 +2,19 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const String = @import("string.zig").String;
+const Chunk = @import("chunk.zig").Chunk;
 const Vm = @import("vm.zig").Vm;
 
 const sipHash = @import("siphash.zig").sipHash24;
+
+const Function = struct {
+    arity: usize,
+    chunk: *Chunk,
+
+    pub fn init(arity: usize, chunk: *Chunk) Function {
+        return Function{ .arity = arity, .chunk = chunk };
+    }
+};
 
 pub const Object = struct {
     tag: Tag,
