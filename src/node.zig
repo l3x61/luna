@@ -157,6 +157,7 @@ pub const Node = struct {
         try self.debugInternal(&prefix, true);
     }
 
+    // TODO: windows does not print unicode characters correctly
     fn debugInternal(self: *Node, prefix: *String, is_last: bool) !void {
         std.debug.print(Ansi.Dim ++ "{s}", .{prefix.buffer});
         var _prefix = try prefix.clone();

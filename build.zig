@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -11,8 +12,10 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(exe);
-    exe.linkLibC();
-    exe.linkSystemLibrary("readline");
+    if (builtin.os.tag == .linux or builtin.os.tag == .macos) {
+        exe.linkLibC();
+        exe.linkSystemLibrary("readline");
+    }
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());

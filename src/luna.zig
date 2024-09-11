@@ -53,8 +53,7 @@ pub const Luna = struct {
             const line = try utils.readLine(self.allocator, "> ");
             defer self.allocator.free(line);
 
-            if (line.len == 0) continue :loop;
-            if (std.mem.eql(u8, line, "exit")) break :loop;
+            if (std.mem.startsWith(u8, line, "exit")) break :loop;
 
             var parser = Parser.init(self.allocator, line);
             var ast = parser.parse() catch continue :loop;
