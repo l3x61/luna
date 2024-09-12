@@ -17,9 +17,9 @@ pub const Vm = struct {
     stack: Array(Value),
     chunk: Chunk,
     ip: usize,
-    root: ?*Object = null,
+    root: ?*Object,
     globals: *Table,
-    lastPopped: ?*Value = null,
+    last_popped: ?*Value,
 
     pub const Errror = error{
         StackUnderflow,
@@ -31,7 +31,9 @@ pub const Vm = struct {
             .stack = try Array(Value).initCapacity(allocator, 1024),
             .chunk = chunk,
             .ip = 0,
+            .root = null,
             .globals = globals,
+            .last_popped = null,
         };
     }
 
@@ -73,7 +75,7 @@ pub const Vm = struct {
                 .NOP => {},
                 .PUSH => try self.stackPush(self.chunk.getConstant(instruction.index)),
                 .POP => {
-                    self.lastPopped = &self.stack.items[self.stack.items.len - 1];
+                    self.last_popped = &self.stack.items[self.stack.items.len - 1];
                     try self.stack.popN(1);
                 },
                 .POPN => try self.stack.popN(instruction.index),
@@ -188,7 +190,7 @@ pub const Vm = struct {
             }
             if (debug) self.debugStack();
         }
-        if (self.lastPopped) |value| std.debug.print(Ansi.Green ++ "{}\n" ++ Ansi.Reset, .{value});
+        if (self.last_popped) |value| std.debug.print(Ansi.Green ++ "{}\n" ++ Ansi.Reset, .{value});
     }
 
     pub fn debugStack(self: *Vm) void {
