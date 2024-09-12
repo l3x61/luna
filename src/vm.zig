@@ -19,6 +19,7 @@ pub const Vm = struct {
     ip: usize,
     root: ?*Object = null,
     globals: *Table,
+    lastPopped: ?*Value = null,
 
     pub const Errror = error{
         StackUnderflow,
@@ -62,16 +63,19 @@ pub const Vm = struct {
         return self.stack.pop() orelse Errror.StackUnderflow;
     }
 
-    pub fn run(self: *Vm) !void {
+    pub fn run(self: *Vm, debug: bool) !void {
         while (true) {
-            std.debug.print(Ansi.Dim ++ "================================================================================\n" ++ Ansi.Reset, .{});
-            _ = self.chunk.debugInstruction(self.ip);
+            if (debug) std.debug.print("\n", .{});
+            if (debug) _ = self.chunk.debugInstruction(self.ip);
             const instruction = self.chunk.getInstruction(self.ip);
             self.ip = instruction.next;
             switch (instruction.opcode) {
                 .NOP => {},
                 .PUSH => try self.stackPush(self.chunk.getConstant(instruction.index)),
-                .POP => try self.stack.popN(1),
+                .POP => {
+                    self.lastPopped = &self.stack.items[self.stack.items.len - 1];
+                    try self.stack.popN(1);
+                },
                 .POPN => try self.stack.popN(instruction.index),
                 .ADD => {
                     const right = try (try self.stackPop()).toNumber();
@@ -180,10 +184,11 @@ pub const Vm = struct {
                     const value = self.stack.get(instruction.index).?;
                     try self.stackPush(value);
                 },
-                .HALT => return,
+                .HALT => break,
             }
-            self.debugStack();
+            if (debug) self.debugStack();
         }
+        if (self.lastPopped) |value| std.debug.print(Ansi.Green ++ "{}\n" ++ Ansi.Reset, .{value});
     }
 
     pub fn debugStack(self: *Vm) void {
@@ -192,6 +197,6 @@ pub const Vm = struct {
             if (i != 0) std.debug.print(", ", .{});
             std.debug.print(Ansi.Cyan ++ "{}" ++ Ansi.Reset, .{item});
         }
-        std.debug.print("{s}", .{if (self.stack.count() == 0) "> EMPTY <\n" else " <- TOP\n"});
+        std.debug.print(Ansi.Dim ++ "{s}" ++ Ansi.Reset, .{if (self.stack.count() == 0) "(EMPTY)\n" else " (TOP)\n"});
     }
 };

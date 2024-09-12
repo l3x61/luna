@@ -48,8 +48,14 @@ pub const Luna = struct {
     }
 
     pub fn repl(self: *Luna) !void {
+        var debug_string_value = try Value.initObjectStringLiteral(self.allocator, "debug");
+        defer debug_string_value.deinit();
+        _ = try self.globals.set(debug_string_value, Value.initBoolean(false));
+
         const stdout = std.io.getStdOut().writer();
         loop: while (true) {
+            const debug = self.globals.get(debug_string_value).?.toBoolean();
+
             const line = try utils.readLine(self.allocator, "> ");
             defer self.allocator.free(line);
 
@@ -58,21 +64,21 @@ pub const Luna = struct {
             var parser = Parser.init(self.allocator, line);
             var ast = parser.parse() catch continue :loop;
             defer ast.deinit(self.allocator);
-            try ast.debug(self.allocator);
+            if (debug) try ast.debug(self.allocator);
 
             var chunk = Chunk.init(self.allocator);
             defer chunk.deinit();
             try chunk.compile(ast);
-            chunk.debug();
 
             var vm = try Vm.init(self.allocator, chunk, &self.globals);
             defer vm.deinit();
+
             var timer = try std.time.Timer.start();
-            try vm.run();
+            try vm.run(debug);
             const elapsed: f64 = @floatFromInt(timer.read());
-            vm.debugStack();
-            vm.globals.debug();
-            try stdout.print(Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
+
+            if (debug) vm.globals.debug();
+            if (debug) try stdout.print(Ansi.Green ++ "{d:.3}" ++ Ansi.Bold ++ "ms\n" ++ Ansi.Reset, .{elapsed / std.time.ns_per_ms});
         }
     }
 };
