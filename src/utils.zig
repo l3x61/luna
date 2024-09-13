@@ -43,6 +43,9 @@ pub fn readLine(allocator: Allocator, prompt: []const u8) ![]u8 {
         const stdout = std.io.getStdOut().writer();
         const stdin = std.io.getStdIn().reader();
         try stdout.print("{s}", .{prompt});
-        return stdin.readUntilDelimiterAlloc(allocator, '\n', std.math.maxInt(usize));
+        return stdin.readUntilDelimiterAlloc(allocator, '\n', std.math.maxInt(usize)) catch |err| switch (err) {
+            error.EndOfStream => cloneSlice(allocator, u8, ""),
+            else => err,
+        };
     }
 }

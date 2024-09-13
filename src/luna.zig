@@ -48,8 +48,7 @@ pub const Luna = struct {
     }
 
     pub fn repl(self: *Luna) !void {
-        var debug_string_value = try Value.initObjectStringLiteral(self.allocator, "debug");
-        defer debug_string_value.deinit();
+        const debug_string_value = try Value.initObjectStringLiteral(self.allocator, "debug");
         _ = try self.globals.set(debug_string_value, Value.initBoolean(false));
 
         const stdout = std.io.getStdOut().writer();
